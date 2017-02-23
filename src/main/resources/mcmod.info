@@ -1,0 +1,16 @@
+[
+{
+  "modid": "villagermarket",
+  "name": "Villager Market",
+  "description": "A villager market mod.",
+  "version": "${version}",
+  "mcversion": "${mcversion}",
+  "url": "",
+  "updateUrl": "",
+  "authorList": ["Face_of_Cat"],
+  "credits": "The Forge and FML guys, SDUBZ and my mom",
+  "logoFile": "",
+  "screenshots": [],
+  "dependencies": []
+}
+]

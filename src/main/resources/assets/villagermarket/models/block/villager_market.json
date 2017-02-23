@@ -1,0 +1,12 @@
+{
+  "parent": "block/cube",
+  "textures": {
+    "particle": "villagermarket:blocks/crate",
+    "north": "villagermarket:blocks/crate-villager",
+    "west": "villagermarket:blocks/crate-villager",
+    "east": "villagermarket:blocks/crate-villager",
+    "south": "villagermarket:blocks/crate-villager",
+    "up": "villagermarket:blocks/crate",
+    "down": "villagermarket:blocks/crate"
+  }
+}
