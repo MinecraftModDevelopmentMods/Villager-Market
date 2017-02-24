@@ -184,7 +184,7 @@ public class VillagerMarketScreen extends GuiContainer {
                     RenderHelper.disableStandardItemLighting();
 
                     int times = VillagerMarketMod.getAmountOf(inventory, recipe.getItemToBuy(), true, true);
-                    if (!recipe.getSecondItemToBuy().isEmpty()) {
+                    if (!recipe.hasSecondItemToBuy()) {
                         times = Math.min(times, VillagerMarketMod.getAmountOf(inventory, recipe.getSecondItemToBuy(), true, true));
                     }
 
@@ -313,7 +313,7 @@ public class VillagerMarketScreen extends GuiContainer {
             RenderHelper.disableStandardItemLighting();
 
             int times = VillagerMarketMod.getAmountOf(inventory, recipe.getItemToBuy(), true, true);
-            if (!recipe.getSecondItemToBuy().isEmpty()) {
+            if (!recipe.hasSecondItemToBuy()) {
                 times = Math.min(times, VillagerMarketMod.getAmountOf(inventory, recipe.getSecondItemToBuy(), true, true));
             }
 
@@ -335,7 +335,7 @@ public class VillagerMarketScreen extends GuiContainer {
     protected void drawGuiContainerForegroundLayer(int mouseX, int mouseY) {
         if (this.drawnStacks != null) {
             for(ItemStackSlotInfo info : this.drawnStacks) {
-                if (!info.stack.isEmpty() && (mouseX >= info.x) && (mouseX <= info.r()) && (mouseY >= info.y) && (mouseY <= info.b())) {
+                if ((info.stack != null) && (info.stack.stackSize > 0) && (mouseX >= info.x) && (mouseX <= info.r()) && (mouseY >= info.y) && (mouseY <= info.b())) {
                     // TODO: figure out tooltip positioning weirdness
                     super.renderToolTip(info.stack, mouseX, mouseY);
                     break;
@@ -345,6 +345,10 @@ public class VillagerMarketScreen extends GuiContainer {
     }
 
     private void drawItemStack(ItemStack stack, int left, int top) {
+        if ((stack == null) || (stack.stackSize == 0)) {
+            return;
+        }
+
         VillagerMarketScreen.this.itemRender.renderItemIntoGUI(
                 stack, left, top);
         VillagerMarketScreen.this.itemRender.renderItemOverlays(VillagerMarketScreen.this.fontRendererObj,
