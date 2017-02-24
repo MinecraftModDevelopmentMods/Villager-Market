@@ -38,6 +38,27 @@ public class VillagerMarketScreen extends GuiContainer {
     private VillagerMarketContainer.MerchantRecipeInfo currentRecipe;
     private GuiButton btnOnce, btnMax;
 
+    private List<ItemStackSlotInfo> drawnStacks;
+    private class ItemStackSlotInfo {
+        final ItemStack stack;
+        final int x;
+        final int y;
+
+        ItemStackSlotInfo(ItemStack s, int x, int y) {
+            this.stack = s;
+            this.x = x;
+            this.y = y;
+        }
+
+        int r() {
+            return this.x + 16;
+        }
+
+        int b() {
+            return this.y + 16;
+        }
+    }
+
     public VillagerMarketScreen(VillagerMarketContainer container) {
         super(container);
 
@@ -155,20 +176,9 @@ public class VillagerMarketScreen extends GuiContainer {
                     GlStateManager.pushMatrix();
                     GlStateManager.enableDepth();
 
-                    VillagerMarketScreen.this.itemRender.renderItemIntoGUI(
-                            recipe.getItemToBuy(), this.left + 5, slotTop + 5);
-                    VillagerMarketScreen.this.itemRender.renderItemOverlays(VillagerMarketScreen.this.fontRendererObj,
-                            recipe.getItemToBuy(), this.left + 5, slotTop + 5);
-
-                    VillagerMarketScreen.this.itemRender.renderItemIntoGUI(
-                            recipe.getSecondItemToBuy(), this.left + 30, slotTop + 5);
-                    VillagerMarketScreen.this.itemRender.renderItemOverlays(VillagerMarketScreen.this.fontRendererObj,
-                            recipe.getSecondItemToBuy(), this.left + 30, slotTop + 5);
-
-                    VillagerMarketScreen.this.itemRender.renderItemIntoGUI(
-                            recipe.getItemToSell(), this.left + 73, slotTop + 5);
-                    VillagerMarketScreen.this.itemRender.renderItemOverlays(VillagerMarketScreen.this.fontRendererObj,
-                            recipe.getItemToSell(), this.left + 73, slotTop + 5);
+                    VillagerMarketScreen.this.drawItemStack(recipe.getItemToBuy(), this.left + 5, slotTop + 5);
+                    VillagerMarketScreen.this.drawItemStack(recipe.getSecondItemToBuy(), this.left + 30, slotTop + 5);
+                    VillagerMarketScreen.this.drawItemStack(recipe.getItemToSell(), this.left + 73, slotTop + 5);
 
                     GlStateManager.popMatrix();
                     RenderHelper.disableStandardItemLighting();
@@ -214,6 +224,9 @@ public class VillagerMarketScreen extends GuiContainer {
 
         this.guiLeft = guiLeft;
         this.guiTop = guiTop;
+
+        super.guiTop = 0;
+        super.guiLeft = 0;
     }
 
     @Override
@@ -254,24 +267,6 @@ public class VillagerMarketScreen extends GuiContainer {
         }
     }
 
-//    @Override
-//    protected void mouseClicked(int mouseX, int mouseY, int mouseButton) throws IOException {
-//        if (!this.btn.mousePressed(this.mc, mouseX, mouseY) &&
-//                ((this.currentRecipe == null) || (!this.btnOnce.mousePressed(this.mc, mouseX, mouseY) && !this.btnMax.mousePressed(this.mc, mouseX, mouseY)))) {
-//            super.mouseClicked(mouseX, mouseY, mouseButton);
-//        }
-//    }
-//
-//    @Override
-//    protected void mouseReleased(int mouseX, int mouseY, int state) {
-//        this.btn.mouseReleased(mouseX, mouseY);
-//        if (this.currentRecipe !=null) {
-//            this.btnOnce.mouseReleased(mouseX, mouseY);
-//            this.btnMax.mouseReleased(mouseX, mouseY);
-//        }
-//        super.mouseReleased(mouseX, mouseY, state);
-//    }
-
     private List<VillagerMarketContainer.MerchantRecipeInfo> getRecipes() {
         List<VillagerMarketContainer.MerchantRecipeInfo> recipes = Lists.newArrayList();
 
@@ -289,10 +284,10 @@ public class VillagerMarketScreen extends GuiContainer {
 
     @Override
     protected void drawGuiContainerBackgroundLayer(float partialTicks, int mouseX, int mouseY) {
-
         this.mc.getTextureManager().bindTexture(VillagerMarketScreen.BACKGROUND);
         this.drawTexturedModalRect(this.guiLeft, this.guiTop, 0, 0, 256, 209);
 
+        this.drawnStacks = Lists.newArrayList();
         this.list.drawScreen(mouseX, mouseY, partialTicks);
         this.listRecipes.drawScreen(mouseX, mouseY, partialTicks);
 
@@ -310,20 +305,9 @@ public class VillagerMarketScreen extends GuiContainer {
             int left = this.guiLeft + 5;
             int top = this.guiTop + 176;
 
-            VillagerMarketScreen.this.itemRender.renderItemIntoGUI(
-                    recipe.getItemToBuy(), left + 5, top + 5);
-            VillagerMarketScreen.this.itemRender.renderItemOverlays(VillagerMarketScreen.this.fontRendererObj,
-                    recipe.getItemToBuy(), left + 5, top + 5);
-
-            VillagerMarketScreen.this.itemRender.renderItemIntoGUI(
-                    recipe.getSecondItemToBuy(), left + 30, top + 5);
-            VillagerMarketScreen.this.itemRender.renderItemOverlays(VillagerMarketScreen.this.fontRendererObj,
-                    recipe.getSecondItemToBuy(), left + 30, top + 5);
-
-            VillagerMarketScreen.this.itemRender.renderItemIntoGUI(
-                    recipe.getItemToSell(), left + 73, top + 5);
-            VillagerMarketScreen.this.itemRender.renderItemOverlays(VillagerMarketScreen.this.fontRendererObj,
-                    recipe.getItemToSell(), left + 73, top + 5);
+            this.drawItemStack(recipe.getItemToBuy(), left + 5, top + 5);
+            this.drawItemStack(recipe.getSecondItemToBuy(), left + 30, top + 5);
+            this.drawItemStack(recipe.getItemToSell(), left + 73, top + 5);
 
             GlStateManager.popMatrix();
             RenderHelper.disableStandardItemLighting();
@@ -344,6 +328,30 @@ public class VillagerMarketScreen extends GuiContainer {
 
             this.btnOnce.drawButton(this.mc, mouseX, mouseY);
             this.btnMax.drawButton(this.mc, mouseX, mouseY);
+        }
+    }
+
+    @Override
+    protected void drawGuiContainerForegroundLayer(int mouseX, int mouseY) {
+        if (this.drawnStacks != null) {
+            for(ItemStackSlotInfo info : this.drawnStacks) {
+                if (!info.stack.isEmpty() && (mouseX >= info.x) && (mouseX <= info.r()) && (mouseY >= info.y) && (mouseY <= info.b())) {
+                    // TODO: figure out tooltip positioning weirdness
+                    super.renderToolTip(info.stack, mouseX, mouseY);
+                    break;
+                }
+            }
+        }
+    }
+
+    private void drawItemStack(ItemStack stack, int left, int top) {
+        VillagerMarketScreen.this.itemRender.renderItemIntoGUI(
+                stack, left, top);
+        VillagerMarketScreen.this.itemRender.renderItemOverlays(VillagerMarketScreen.this.fontRendererObj,
+                stack, left, top);
+
+        if (this.drawnStacks != null) {
+            this.drawnStacks.add(new ItemStackSlotInfo(stack, left, top));
         }
     }
 }

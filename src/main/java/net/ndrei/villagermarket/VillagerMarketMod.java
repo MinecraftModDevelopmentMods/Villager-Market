@@ -138,12 +138,10 @@ public class VillagerMarketMod {
         return amount;
     }
 
-    @SideOnly(Side.CLIENT)
     static void sendMessageToServer(NBTTagCompound message) {
         VillagerMarketMod.instance.networkWrapper.sendToServer(new VillagerMarketNetworkPackage(message));
     }
 
-    @SideOnly(Side.SERVER)
     static void sendMessageToClient(NBTTagCompound message, EntityPlayerMP player) {
         VillagerMarketMod.instance.networkWrapper.sendTo(new VillagerMarketNetworkPackage(message), player);
     }

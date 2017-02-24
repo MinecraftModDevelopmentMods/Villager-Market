@@ -2,6 +2,8 @@ package net.ndrei.villagermarket;
 
 import com.google.common.collect.Lists;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.item.EntityItem;
+import net.minecraft.entity.item.EntityXPOrb;
 import net.minecraft.entity.passive.EntityVillager;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
@@ -237,9 +239,55 @@ public class VillagerMarketContainer extends Container {
 
             for(int use = 0; use < uses; use++) {
                 ItemStack result = this.recipe.getItemToSell().copy();
-                InventoryHelper.spawnItemStack(this.container.player.world, this.container.player.posX, this.container.player.posY, this.container.player.posZ, result);
+
+                // try to merge result into existing slots
+                int emptySlot = -1;
+                for(int index = 0; index < this.container.player.inventory.getSizeInventory(); index++) {
+                    if (!this.container.player.inventory.isItemValidForSlot(index, result)) {
+                        // TODO: find a way to ignore armor slots for non-armor items
+                        return;
+                    }
+
+                    ItemStack inv = this.container.player.inventory.getStackInSlot(index);
+                    if (inv.isEmpty() && (emptySlot == -1)) {
+                        emptySlot = index;
+                    }
+                    else if (!inv.isEmpty() && inv.isItemEqual(result)) {
+                        int max = inv.getMaxStackSize();
+                        int canInsert = Math.min(Math.min(max, result.getCount()), max - inv.getCount());
+                        if (canInsert > 0) {
+                            inv.setCount(inv.getCount() + canInsert);
+                            this.container.player.inventory.setInventorySlotContents(index, inv);
+
+                            result.shrink(canInsert);
+                        }
+                    }
+
+                    if (result.isEmpty()) {
+                        break;
+                    }
+                }
+
+                if (!result.isEmpty()) {
+                    if (emptySlot >= 0) {
+                        this.container.player.inventory.setInventorySlotContents(emptySlot, result);
+                    }
+                    else {
+                        BlockPos pos = this.container.player.getPosition();
+                        InventoryHelper.spawnItemStack(this.container.player.world,
+                                pos.getX(), pos.getY(), pos.getZ(),
+                                result.copy());
+                        VillagerMarketMod.logger.info("Spawned at " + pos.toString() + " : " + result.toString());
+                    }
+                }
 
                 this.villager.useRecipe(this.recipe);
+            }
+
+            BlockPos villagerPos = this.villager.getPos();
+            AxisAlignedBB aabb = new AxisAlignedBB(villagerPos.south().east().down(), villagerPos.north().west().up());
+            for (EntityXPOrb xp: this.villager.getWorld().getEntitiesWithinAABB(EntityXPOrb.class, aabb)) {
+                xp.setPosition(this.container.player.posX, this.container.player.posY, this.container.player.posZ);
             }
 
             this.container.player.inventory.markDirty();
