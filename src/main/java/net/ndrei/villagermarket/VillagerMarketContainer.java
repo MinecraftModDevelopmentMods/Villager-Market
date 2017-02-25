@@ -17,6 +17,7 @@ import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.village.MerchantRecipe;
 import net.minecraft.village.MerchantRecipeList;
+import net.minecraft.village.Village;
 import net.minecraft.world.World;
 import net.minecraftforge.common.util.Constants;
 import net.minecraftforge.items.ItemHandlerHelper;
@@ -39,6 +40,11 @@ public class VillagerMarketContainer extends Container {
         this.player = player;
 
         int radius = 16;
+        Village village = world.getVillageCollection().getNearestVillage(pos, radius);
+        if (village != null) {
+            pos = village.getCenter();
+            radius = village.getVillageRadius();
+        }
         AxisAlignedBB bb = new AxisAlignedBB(
                 pos.east(radius).south(radius).down(radius),
                 pos.west(radius).north(radius).up(radius));
