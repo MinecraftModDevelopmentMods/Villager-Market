@@ -39,8 +39,8 @@ public class VillagerMarketMod {
         }
 
         @Override
-        public Item getTabIconItem() {
-            return this.getIconItemStack().getItem();
+        public ItemStack getTabIconItem() {
+            return this.getIconItemStack();
         }
     };
 
@@ -72,7 +72,7 @@ public class VillagerMarketMod {
         List<ItemStack> list = Lists.newArrayList();
         for (int i = 0; i < inventory.getSizeInventory(); i++) {
             ItemStack stack = inventory.getStackInSlot(i);
-            if ((stack == null) || (stack.stackSize == 0)) {
+            if (stack.isEmpty()) {
                 continue;
             }
 
@@ -86,34 +86,33 @@ public class VillagerMarketMod {
             if (match == null) {
                 list.add(stack.copy());
             } else {
-                match.stackSize += stack.stackSize;
+                match.setCount(match.getCount() + stack.getCount());
             }
         }
         return list;
     }
 
     static int extractFromCombinedInventory(IInventory inventory, ItemStack stack, int amount) {
-        if ((stack == null) || (stack.stackSize == 0)) {
+        if (stack.isEmpty()) {
             return 0;
         }
 
         int taken = 0;
         for (int i = 0; i < inventory.getSizeInventory(); i++) {
             ItemStack temp = inventory.getStackInSlot(i);
-            if ((temp == null) || (temp.stackSize == 0) || (temp.getItem() != stack.getItem())) {
+            if (temp.isEmpty() || (temp.getItem() != stack.getItem())) {
                 continue;
             }
 
             ItemStack takenStack;
-            if (temp.stackSize == amount) {
+            if (temp.getCount() == amount) {
                 takenStack = inventory.removeStackFromSlot(i);
             } else {
-                takenStack = inventory.decrStackSize(i, Math.min(amount, temp.stackSize));
+                takenStack = inventory.decrStackSize(i, Math.min(amount, temp.getCount()));
             }
-            int takenSize = (takenStack == null) ? 0 : takenStack.stackSize;
 
-            taken += takenSize;
-            amount -= takenSize;
+            taken += takenStack.getCount();
+            amount -= takenStack.getCount();
             if (amount <= 0) {
                 break;
             }
@@ -123,18 +122,18 @@ public class VillagerMarketMod {
 
     static int getAmountOf(List<ItemStack> stacks, ItemStack stack, boolean fullCount, boolean isCombined) {
         int amount = 0;
-        if ((stack != null) && (stack.stackSize > 0) && (stacks != null)) {
+        if (!stack.isEmpty() && (stacks != null)) {
             for (ItemStack s : stacks) {
                 if (s.isItemEqual(stack)) {
-                    amount += s.stackSize;
+                    amount += s.getCount();
                     if (isCombined) {
                         break;
                     }
                 }
             }
         }
-        if (fullCount && (stack != null) && (stack.stackSize > 0)) {
-            amount /= stack.stackSize;
+        if (fullCount && !stack.isEmpty()) {
+            amount /= stack.getCount();
         }
         return amount;
     }

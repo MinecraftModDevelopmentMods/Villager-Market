@@ -138,7 +138,7 @@ public class VillagerMarketContainer extends Container {
         int villagerId = compound.getInteger("villagerId");
         int recipeId = compound.getInteger("recipeId");
 
-        Entity raw = this.player.getEntityWorld().getEntityByID(villagerId);
+        Entity raw = this.player.world.getEntityByID(villagerId);
         if ((raw != null) && (raw instanceof  EntityVillager)) {
             EntityVillager villager = (EntityVillager)raw;
 
@@ -224,12 +224,12 @@ public class VillagerMarketContainer extends Container {
             }
 
             ItemStack item1 = this.recipe.getItemToBuy();
-            int item1Size = item1.stackSize * uses;
+            int item1Size = item1.getCount() * uses;
 
-            ItemStack item2 = this.recipe.hasSecondItemToBuy() ? this.recipe.getSecondItemToBuy() : null;
+            ItemStack item2 = this.recipe.getSecondItemToBuy();
             int item2Size = 0;
-            if ((item2 != null) && (item2.stackSize > 0)) {
-                item2Size = item2.stackSize * uses;
+            if (!item2.isEmpty()) {
+                item2Size = item2.getCount() * uses;
             }
 
             int item1Extracted = VillagerMarketMod.extractFromCombinedInventory(this.container.player.inventory, item1, item1Size);
@@ -255,32 +255,32 @@ public class VillagerMarketContainer extends Container {
                     }
 
                     ItemStack inv = this.container.player.inventory.getStackInSlot(index);
-                    if (((inv == null) || (inv.stackSize == 0)) && (emptySlot == -1)) {
+                    if (inv.isEmpty() && (emptySlot == -1)) {
                         emptySlot = index;
                     }
-                    else if ((inv != null) && (inv.stackSize > 0) && inv.isItemEqual(result)) {
+                    else if (!inv.isEmpty() && inv.isItemEqual(result)) {
                         int max = inv.getMaxStackSize();
-                        int canInsert = Math.min(Math.min(max, result.stackSize), max - inv.stackSize);
+                        int canInsert = Math.min(Math.min(max, result.getCount()), max - inv.getCount());
                         if (canInsert > 0) {
-                            inv.stackSize += canInsert;
+                            inv.setCount(inv.getCount() + canInsert);
                             this.container.player.inventory.setInventorySlotContents(index, inv);
 
-                            result.stackSize -= canInsert;
+                            result.shrink(canInsert);
                         }
                     }
 
-                    if (result.stackSize <= 0) {
+                    if (result.isEmpty()) {
                         break;
                     }
                 }
 
-                if (result.stackSize > 0) {
+                if (!result.isEmpty()) {
                     if (emptySlot >= 0) {
                         this.container.player.inventory.setInventorySlotContents(emptySlot, result);
                     }
                     else {
                         BlockPos pos = this.container.player.getPosition();
-                        InventoryHelper.spawnItemStack(this.container.player.getEntityWorld(),
+                        InventoryHelper.spawnItemStack(this.container.player.world,
                                 pos.getX(), pos.getY(), pos.getZ(),
                                 result.copy());
                         VillagerMarketMod.logger.info("Spawned at " + pos.toString() + " : " + result.toString());
@@ -290,9 +290,9 @@ public class VillagerMarketContainer extends Container {
                 this.villager.useRecipe(this.recipe);
             }
 
-            BlockPos villagerPos = this.villager.getPosition();
+            BlockPos villagerPos = this.villager.getPos();
             AxisAlignedBB aabb = new AxisAlignedBB(villagerPos.south().east().down(), villagerPos.north().west().up());
-            for (EntityXPOrb xp: this.villager.getEntityWorld().getEntitiesWithinAABB(EntityXPOrb.class, aabb)) {
+            for (EntityXPOrb xp: this.villager.getWorld().getEntitiesWithinAABB(EntityXPOrb.class, aabb)) {
                 xp.setPosition(this.container.player.posX, this.container.player.posY, this.container.player.posZ);
             }
 

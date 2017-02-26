@@ -27,8 +27,6 @@ import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 import net.minecraftforge.oredict.ShapedOreRecipe;
 
-import javax.annotation.Nullable;
-
 /**
  * Created by CF on 2017-02-21.
  */
@@ -60,7 +58,7 @@ public class VillagerMarketBlock extends Block {
         );
     }
 
-    public boolean onBlockActivated(World worldIn, BlockPos pos, IBlockState state, EntityPlayer playerIn, EnumHand hand, @Nullable ItemStack heldItem, EnumFacing side, float hitX, float hitY, float hitZ) {
+    public boolean onBlockActivated(World worldIn, BlockPos pos, IBlockState state, EntityPlayer playerIn, EnumHand hand, EnumFacing facing, float hitX, float hitY, float hitZ) {
         if (!worldIn.isRemote) {
             playerIn.openGui(VillagerMarketMod.instance, 5, worldIn, pos.getX(), pos.getY(), pos.getZ());
         }

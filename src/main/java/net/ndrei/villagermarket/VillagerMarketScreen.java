@@ -334,8 +334,8 @@ public class VillagerMarketScreen extends GuiContainer {
     protected void drawGuiContainerForegroundLayer(int mouseX, int mouseY) {
         if (this.drawnStacks != null) {
             for(ItemStackSlotInfo info : this.drawnStacks) {
-                if ((info.stack != null) && (info.stack.stackSize > 0) && (mouseX >= info.x) && (mouseX <= info.r()) && (mouseY >= info.y) && (mouseY <= info.b())) {
-                    super.renderToolTip(info.stack, mouseX - this.guiLeft, mouseY - this.guiTop);
+                if (!info.stack.isEmpty() && (mouseX >= info.x) && (mouseX <= info.r()) && (mouseY >= info.y) && (mouseY <= info.b())) {
+                    super.renderToolTip(info.stack, mouseX - this.getGuiLeft(), mouseY - this.getGuiTop());
                     break;
                 }
             }
@@ -343,10 +343,6 @@ public class VillagerMarketScreen extends GuiContainer {
     }
 
     private void drawItemStack(ItemStack stack, int left, int top) {
-        if ((stack == null) || (stack.stackSize == 0)) {
-            return;
-        }
-
         VillagerMarketScreen.this.itemRender.renderItemIntoGUI(
                 stack, left, top);
         VillagerMarketScreen.this.itemRender.renderItemOverlays(VillagerMarketScreen.this.fontRendererObj,
