@@ -13,6 +13,7 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.village.MerchantRecipe;
 import net.minecraftforge.fml.client.GuiScrollingList;
+import org.lwjgl.input.Mouse;
 
 import java.io.IOException;
 import java.util.List;
@@ -32,8 +33,6 @@ public class VillagerMarketScreen extends GuiContainer {
 
     private String selectedVillagerType = "";
     private boolean showAllRecipes = true;
-
-    private int guiLeft = 0, guiTop = 0;
 
     private VillagerMarketContainer.MerchantRecipeInfo currentRecipe;
     private GuiButton btnOnce, btnMax;
@@ -63,6 +62,9 @@ public class VillagerMarketScreen extends GuiContainer {
         super(container);
 
         this.container = container;
+
+        super.xSize = 256;
+        super.ySize = 209;
     }
 
     void readServerCompound(NBTTagCompound compound) {
@@ -87,11 +89,11 @@ public class VillagerMarketScreen extends GuiContainer {
     public void initGui() {
         super.initGui();
 
-        int guiWidth = 256;
-        int guiHeight = 209;
+        int guiWidth = super.getXSize();
+        int guiHeight = super.getYSize();
 
-        int guiTop = (this.height - guiHeight) / 2;
-        int guiLeft = (this.width - guiWidth) / 2;
+        int guiTop = super.getGuiTop(); // (this.height - guiHeight) / 2;
+        int guiLeft = super.getGuiLeft(); // (this.width - guiWidth) / 2;
 
         this.list = new GuiScrollingList(this.mc, 88, 140, guiTop + 5 + 1, guiTop + 140 + 5 + 1, guiLeft + 5 + 1, this.fontRendererObj.FONT_HEIGHT + 2, this.width, this.height) {
             private int selected = 0;
@@ -222,11 +224,8 @@ public class VillagerMarketScreen extends GuiContainer {
         this.btnMax.visible = false;
         this.addButton(this.btnMax);
 
-        this.guiLeft = guiLeft;
-        this.guiTop = guiTop;
-
-        super.guiTop = 0;
-        super.guiLeft = 0;
+//        this.guiLeft = guiLeft;
+//        this.guiTop = guiTop;
     }
 
     @Override
@@ -285,7 +284,7 @@ public class VillagerMarketScreen extends GuiContainer {
     @Override
     protected void drawGuiContainerBackgroundLayer(float partialTicks, int mouseX, int mouseY) {
         this.mc.getTextureManager().bindTexture(VillagerMarketScreen.BACKGROUND);
-        this.drawTexturedModalRect(this.guiLeft, this.guiTop, 0, 0, 256, 209);
+        this.drawTexturedModalRect(this.getGuiLeft(), this.getGuiTop(), 0, 0, 256, 209);
 
         this.drawnStacks = Lists.newArrayList();
         this.list.drawScreen(mouseX, mouseY, partialTicks);
@@ -336,8 +335,7 @@ public class VillagerMarketScreen extends GuiContainer {
         if (this.drawnStacks != null) {
             for(ItemStackSlotInfo info : this.drawnStacks) {
                 if (!info.stack.isEmpty() && (mouseX >= info.x) && (mouseX <= info.r()) && (mouseY >= info.y) && (mouseY <= info.b())) {
-                    // TODO: figure out tooltip positioning weirdness
-                    super.renderToolTip(info.stack, mouseX, mouseY);
+                    super.renderToolTip(info.stack, mouseX - this.getGuiLeft(), mouseY - this.getGuiTop());
                     break;
                 }
             }
@@ -353,5 +351,17 @@ public class VillagerMarketScreen extends GuiContainer {
         if (this.drawnStacks != null) {
             this.drawnStacks.add(new ItemStackSlotInfo(stack, left, top));
         }
+    }
+
+    @Override
+    public void handleMouseInput() throws IOException {
+        int mouseX = Mouse.getEventX() * this.width / this.mc.displayWidth;
+        int mouseY = this.height - Mouse.getEventY() * this.height / this.mc.displayHeight - 1;
+
+        super.handleMouseInput();
+        if (this.list != null)
+            this.list.handleMouseInput(mouseX, mouseY);
+        if (this.listRecipes != null)
+            this.listRecipes.handleMouseInput(mouseX, mouseY);
     }
 }
