@@ -89,11 +89,11 @@ public class VillagerMarketScreen extends GuiContainer {
     public void initGui() {
         super.initGui();
 
-        int guiWidth = super.getXSize();
-        int guiHeight = super.getYSize();
+        int guiWidth = super.xSize;
+        int guiHeight = super.ySize;
 
-        int guiTop = super.getGuiTop(); // (this.height - guiHeight) / 2;
-        int guiLeft = super.getGuiLeft(); // (this.width - guiWidth) / 2;
+        int guiTop = super.guiTop; // (this.height - guiHeight) / 2;
+        int guiLeft = super.guiLeft; // (this.width - guiWidth) / 2;
 
         this.list = new GuiScrollingList(this.mc, 88, 140, guiTop + 5 + 1, guiTop + 140 + 5 + 1, guiLeft + 5 + 1, this.fontRendererObj.FONT_HEIGHT + 2, this.width, this.height) {
             private int selected = 0;
@@ -186,7 +186,7 @@ public class VillagerMarketScreen extends GuiContainer {
                     RenderHelper.disableStandardItemLighting();
 
                     int times = VillagerMarketMod.getAmountOf(inventory, recipe.getItemToBuy(), true, true);
-                    if (!recipe.hasSecondItemToBuy()) {
+                    if (recipe.hasSecondItemToBuy()) {
                         times = Math.min(times, VillagerMarketMod.getAmountOf(inventory, recipe.getSecondItemToBuy(), true, true));
                     }
 
@@ -284,7 +284,7 @@ public class VillagerMarketScreen extends GuiContainer {
     @Override
     protected void drawGuiContainerBackgroundLayer(float partialTicks, int mouseX, int mouseY) {
         this.mc.getTextureManager().bindTexture(VillagerMarketScreen.BACKGROUND);
-        this.drawTexturedModalRect(this.getGuiLeft(), this.getGuiTop(), 0, 0, 256, 209);
+        this.drawTexturedModalRect(this.guiLeft, this.guiTop, 0, 0, 256, 209);
 
         this.drawnStacks = Lists.newArrayList();
         this.list.drawScreen(mouseX, mouseY, partialTicks);
@@ -312,7 +312,7 @@ public class VillagerMarketScreen extends GuiContainer {
             RenderHelper.disableStandardItemLighting();
 
             int times = VillagerMarketMod.getAmountOf(inventory, recipe.getItemToBuy(), true, true);
-            if (!recipe.hasSecondItemToBuy()) {
+            if (recipe.hasSecondItemToBuy()) {
                 times = Math.min(times, VillagerMarketMod.getAmountOf(inventory, recipe.getSecondItemToBuy(), true, true));
             }
 
@@ -335,7 +335,7 @@ public class VillagerMarketScreen extends GuiContainer {
         if (this.drawnStacks != null) {
             for(ItemStackSlotInfo info : this.drawnStacks) {
                 if ((info.stack != null) && (info.stack.stackSize > 0) && (mouseX >= info.x) && (mouseX <= info.r()) && (mouseY >= info.y) && (mouseY <= info.b())) {
-                    super.renderToolTip(info.stack, mouseX - this.getGuiLeft(), mouseY - this.getGuiTop());
+                    super.renderToolTip(info.stack, mouseX - this.guiLeft, mouseY - this.guiTop);
                     break;
                 }
             }
