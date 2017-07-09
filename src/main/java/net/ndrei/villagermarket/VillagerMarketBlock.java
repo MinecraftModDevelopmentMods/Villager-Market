@@ -26,6 +26,7 @@ import net.minecraftforge.fml.common.registry.GameRegistry;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 import net.minecraftforge.oredict.ShapedOreRecipe;
+import net.minecraftforge.registries.IForgeRegistry;
 
 /**
  * Created by CF on 2017-02-21.
@@ -35,19 +36,23 @@ public class VillagerMarketBlock extends Block {
         super(Material.WOOD, MapColor.BROWN);
     }
 
-    void register() {
+    void registerBlock(IForgeRegistry<Block> registry) {
         this.setRegistryName(VillagerMarketMod.MODID, "villager_market");
         this.setUnlocalizedName(VillagerMarketMod.MODID + "_villager_market");
         this.setHarvestLevel("axe", 0);
         this.setHardness(3.0f);
 
-        GameRegistry.register(this);
-        GameRegistry.register(new ItemBlock(this), this.getRegistryName());
+        registry.register(this);
+//        registry.register(new ItemBlock(this), this.getRegistryName());
 
-        CraftingManager.getInstance().addRecipe(new ShapedOreRecipe(new ItemStack(Item.getItemFromBlock(this)),
-                "xxx", "xex", "xxx",
-                'x', Blocks.PLANKS,
-                'e', Blocks.EMERALD_BLOCK));
+//        CraftingManager.getInstance().addRecipe(new ShapedOreRecipe(new ItemStack(Item.getItemFromBlock(this)),
+//                "xxx", "xex", "xxx",
+//                'x', Blocks.PLANKS,
+//                'e', Blocks.EMERALD_BLOCK));
+    }
+
+    void registerItem(IForgeRegistry<Item> registry) {
+        registry.register(new ItemBlock(this).setRegistryName(this.getRegistryName()));
     }
 
     @SideOnly(Side.CLIENT)

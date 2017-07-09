@@ -95,7 +95,7 @@ public class VillagerMarketScreen extends GuiContainer {
         int guiTop = super.guiTop; // (this.height - guiHeight) / 2;
         int guiLeft = super.guiLeft; // (this.width - guiWidth) / 2;
 
-        this.list = new GuiScrollingList(this.mc, 88, 140, guiTop + 5 + 1, guiTop + 140 + 5 + 1, guiLeft + 5 + 1, this.fontRendererObj.FONT_HEIGHT + 2, this.width, this.height) {
+        this.list = new GuiScrollingList(this.mc, 88, 140, guiTop + 5 + 1, guiTop + 140 + 5 + 1, guiLeft + 5 + 1, this.fontRenderer.FONT_HEIGHT + 2, this.width, this.height) {
             private int selected = 0;
 
             @Override
@@ -128,10 +128,10 @@ public class VillagerMarketScreen extends GuiContainer {
             protected void drawSlot(int slotIdx, int entryRight, int slotTop, int slotBuffer, Tessellator tess) {
                 String[] types = VillagerMarketScreen.this.container.getVillagerTypes();
                 if ((types != null) && (slotIdx > 0) && (slotIdx <= types.length)) {
-                    VillagerMarketScreen.this.drawString(VillagerMarketScreen.this.fontRendererObj,
+                    VillagerMarketScreen.this.drawString(VillagerMarketScreen.this.fontRenderer,
                             types[slotIdx - 1], this.left + 1, slotTop, 0xFFFFFF);
                 } else {
-                    VillagerMarketScreen.this.drawString(VillagerMarketScreen.this.fontRendererObj,
+                    VillagerMarketScreen.this.drawString(VillagerMarketScreen.this.fontRenderer,
                             "[ ALL ]", this.left + 1, slotTop, 0xFFFFFF);
                 }
             }
@@ -190,9 +190,9 @@ public class VillagerMarketScreen extends GuiContainer {
                         times = Math.min(times, VillagerMarketMod.getAmountOf(inventory, recipe.getSecondItemToBuy(), true, true));
                     }
 
-                    VillagerMarketScreen.this.drawString(VillagerMarketScreen.this.fontRendererObj,
+                    VillagerMarketScreen.this.drawString(VillagerMarketScreen.this.fontRenderer,
                             "[" + String.valueOf(times) + " / " + String.valueOf(recipeInfo.getMaxUses()) + "]",
-                            this.left + 1 + 100, slotTop + (this.slotHeight - VillagerMarketScreen.this.fontRendererObj.FONT_HEIGHT) / 2, 0xFFFFFF);
+                            this.left + 1 + 100, slotTop + (this.slotHeight - VillagerMarketScreen.this.fontRenderer.FONT_HEIGHT) / 2, 0xFFFFFF);
                 }
             }
         };
@@ -291,7 +291,7 @@ public class VillagerMarketScreen extends GuiContainer {
         this.listRecipes.drawScreen(mouseX, mouseY, partialTicks);
 
         // GuiOptionButton btn = new GuiOptionButton(42, 0, 0, 20, 100, "only available");
-        this.btn.drawButton(this.mc, mouseX, mouseY);
+        this.btn.drawButton(this.mc, mouseX, mouseY, partialTicks);
 
         if (this.currentRecipe != null) {
             List<ItemStack> inventory = VillagerMarketScreen.this.container.getPlayerInventory();
@@ -316,17 +316,17 @@ public class VillagerMarketScreen extends GuiContainer {
                 times = Math.min(times, VillagerMarketMod.getAmountOf(inventory, recipe.getSecondItemToBuy(), true, true));
             }
 
-            VillagerMarketScreen.this.drawString(VillagerMarketScreen.this.fontRendererObj,
+            VillagerMarketScreen.this.drawString(VillagerMarketScreen.this.fontRenderer,
                     "[" + String.valueOf(times) + " / " + String.valueOf(this.currentRecipe.getMaxUses()) + "]",
-                    left + 1 + 100, top + (28 - VillagerMarketScreen.this.fontRendererObj.FONT_HEIGHT) / 2, 0xFFFFFF);
+                    left + 1 + 100, top + (28 - VillagerMarketScreen.this.fontRenderer.FONT_HEIGHT) / 2, 0xFFFFFF);
 
             int uses = Math.min(this.currentRecipe.getUses(inventory, true), this.currentRecipe.getMaxUses());
             this.btnMax.displayString = "x " + String.valueOf(uses);
             this.btnOnce.enabled = (uses > 0);
             this.btnMax.enabled = (uses > 0);
 
-            this.btnOnce.drawButton(this.mc, mouseX, mouseY);
-            this.btnMax.drawButton(this.mc, mouseX, mouseY);
+            this.btnOnce.drawButton(this.mc, mouseX, mouseY, partialTicks);
+            this.btnMax.drawButton(this.mc, mouseX, mouseY, partialTicks);
         }
     }
 
@@ -345,7 +345,7 @@ public class VillagerMarketScreen extends GuiContainer {
     private void drawItemStack(ItemStack stack, int left, int top) {
         VillagerMarketScreen.this.itemRender.renderItemIntoGUI(
                 stack, left, top);
-        VillagerMarketScreen.this.itemRender.renderItemOverlays(VillagerMarketScreen.this.fontRendererObj,
+        VillagerMarketScreen.this.itemRender.renderItemOverlays(VillagerMarketScreen.this.fontRenderer,
                 stack, left, top);
 
         if (this.drawnStacks != null) {

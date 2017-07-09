@@ -1,0 +1,14 @@
+{
+  "type": "forge:ore_shaped",
+  "group": "village.market",
+  "result": { "item": "villagermarket:villager_market" },
+  "pattern": [
+    "xxx",
+    "xex",
+    "xxx"
+  ],
+  "key": {
+    "x": { "type": "forge:ore_dict", "ore": "plankWood" },
+    "e": { "type": "forge:ore_dict", "ore": "blockEmerald" }
+  }
+}

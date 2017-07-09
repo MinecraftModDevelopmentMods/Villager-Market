@@ -26,13 +26,13 @@ public class VillagerMarketNetworkHandler implements IMessageHandler<VillagerMar
             }
         } else {
             // processing server side message
-            if ((message != null) && (ctx.getServerHandler().playerEntity.openContainer instanceof VillagerMarketContainer)) {
+            if ((message != null) && (ctx.getServerHandler().player.openContainer instanceof VillagerMarketContainer)) {
                 if (message.getCompound().hasKey("LOAD", Constants.NBT.TAG_INT)) {
-                    VillagerMarketContainer container = (VillagerMarketContainer) ctx.getServerHandler().playerEntity.openContainer;
+                    VillagerMarketContainer container = (VillagerMarketContainer) ctx.getServerHandler().player.openContainer;
                     return new VillagerMarketNetworkPackage(container.getNBTForMessage());
                 }
                 else {
-                    ((VillagerMarketContainer) ctx.getServerHandler().playerEntity.openContainer).processMessageFromClient(message.getCompound());
+                    ((VillagerMarketContainer) ctx.getServerHandler().player.openContainer).processMessageFromClient(message.getCompound());
                 }
             }
         }
