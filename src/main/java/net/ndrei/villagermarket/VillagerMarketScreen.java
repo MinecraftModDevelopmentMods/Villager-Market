@@ -165,6 +165,11 @@ public class VillagerMarketScreen extends GuiContainer {
 
             @Override
             protected void drawSlot(int slotIdx, int entryRight, int slotTop, int slotBuffer, Tessellator tess) {
+                if (slotIdx == this.selectedIndex)
+                	GlStateManager.color(0.4f, 0.4f, 0.4f);
+                else
+                	GlStateManager.color(1.0f, 1.0f, 1.0f);
+                
                 VillagerMarketScreen.this.mc.getTextureManager().bindTexture(VillagerMarketScreen.BACKGROUND);
                 VillagerMarketScreen.this.drawTexturedModalRect(this.left, slotTop, 2, 226, 151, 28);
 
@@ -283,6 +288,7 @@ public class VillagerMarketScreen extends GuiContainer {
 
     @Override
     protected void drawGuiContainerBackgroundLayer(float partialTicks, int mouseX, int mouseY) {
+        GlStateManager.color(1.0f, 1.0f, 1.0f, 1.0f);
         this.mc.getTextureManager().bindTexture(VillagerMarketScreen.BACKGROUND);
         this.drawTexturedModalRect(this.guiLeft, this.guiTop, 0, 0, 256, 209);
 
