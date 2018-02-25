@@ -1,33 +1,27 @@
 package net.ndrei.villagermarket;
 
+import java.util.List;
 import com.google.common.collect.Lists;
+import org.apache.logging.log4j.Logger;
 import net.minecraft.creativetab.CreativeTabs;
-import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.inventory.IInventory;
-import net.minecraft.inventory.InventoryBasic;
-import net.minecraft.inventory.InventoryHelper;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
-import net.minecraftforge.fml.common.eventhandler.EventBus;
 import net.minecraftforge.fml.common.network.NetworkRegistry;
 import net.minecraftforge.fml.common.network.simpleimpl.SimpleNetworkWrapper;
 import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
-import net.minecraftforge.items.IItemHandler;
-import org.apache.logging.log4j.Logger;
 
-import java.util.List;
-
-@Mod(modid = VillagerMarketMod.MODID, version = VillagerMarketMod.VERSION)
+@Mod(modid = Constants.MOD_ID, version = Constants.MOD_VERSION, name = Constants.MOD_NAME,
+    acceptedMinecraftVersions = Constants.MOD_MC_VERSION,
+    dependencies = Constants.MOD_DEPENDENCIES,
+    certificateFingerprint = Constants.MOD_SIGN_FINGERPRINT,
+    useMetadata = true)
 public class VillagerMarketMod {
-    public static final String MODID = "villagermarket";
-    public static final String VERSION = "1.0";
-
     @Mod.Instance
     @SuppressWarnings("unused")
     public static VillagerMarketMod instance;

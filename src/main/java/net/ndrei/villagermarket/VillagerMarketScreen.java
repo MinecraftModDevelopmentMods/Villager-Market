@@ -1,6 +1,9 @@
 package net.ndrei.villagermarket;
 
+import java.io.IOException;
+import java.util.List;
 import com.google.common.collect.Lists;
+import org.lwjgl.input.Mouse;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.GuiListButton;
 import net.minecraft.client.gui.GuiPageButtonList;
@@ -13,16 +16,12 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.village.MerchantRecipe;
 import net.minecraftforge.fml.client.GuiScrollingList;
-import org.lwjgl.input.Mouse;
-
-import java.io.IOException;
-import java.util.List;
 
 /**
  * Created by CF on 2017-02-21.
  */
 public class VillagerMarketScreen extends GuiContainer {
-    public static final ResourceLocation BACKGROUND = new ResourceLocation(VillagerMarketMod.MODID, "textures/gui/gui.png");
+    public static final ResourceLocation BACKGROUND = new ResourceLocation(Constants.MOD_ID, "textures/gui/gui.png");
 
     private VillagerMarketContainer container;
 

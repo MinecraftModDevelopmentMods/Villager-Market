@@ -5,27 +5,16 @@ import net.minecraft.block.material.MapColor;
 import net.minecraft.block.material.Material;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.renderer.block.model.ModelResourceLocation;
-import net.minecraft.entity.passive.EntityVillager;
 import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.init.Blocks;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemBlock;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.crafting.CraftingManager;
-import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.EnumHand;
-import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.text.TextComponentString;
-import net.minecraft.village.MerchantRecipe;
 import net.minecraft.world.World;
 import net.minecraftforge.client.model.ModelLoader;
-import net.minecraftforge.fml.common.registry.GameRegistry;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
-import net.minecraftforge.oredict.ShapedOreRecipe;
 import net.minecraftforge.registries.IForgeRegistry;
 
 /**
@@ -37,8 +26,8 @@ public class VillagerMarketBlock extends Block {
     }
 
     void registerBlock(IForgeRegistry<Block> registry) {
-        this.setRegistryName(VillagerMarketMod.MODID, "villager_market");
-        this.setUnlocalizedName(VillagerMarketMod.MODID + "_villager_market");
+        this.setRegistryName(Constants.MOD_ID, "villager_market");
+        this.setUnlocalizedName(Constants.MOD_ID + "_villager_market");
         this.setHarvestLevel("axe", 0);
         this.setHardness(3.0f);
 
