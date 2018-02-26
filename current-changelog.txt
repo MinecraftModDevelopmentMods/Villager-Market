@@ -1,2 +1,0 @@
-- moved to MMD servers
-- jar should now be signed
