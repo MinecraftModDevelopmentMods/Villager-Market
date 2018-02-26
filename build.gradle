@@ -215,9 +215,6 @@ curseforge {
             }
             mainArtifact(jar) {
                 displayName = "$project.mod_name : $displayVersion"
-                relations {
-                    // TODO: add relations ('requiredLibrary' || 'optionalLibrary')
-                }
             }
             addArtifact(sourceJar) {
                 displayName = "$project.mod_name : $displayVersion : Sources"
