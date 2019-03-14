@@ -2,6 +2,8 @@
 
 #future
 
+#1.0.2
+
 #1.0.1
 - update item highlight
 - fixed issues around server/client network handling
