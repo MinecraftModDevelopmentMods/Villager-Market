@@ -1,9 +1,6 @@
 package net.ndrei.villagermarket;
 
-import java.io.IOException;
-import java.util.List;
 import com.google.common.collect.Lists;
-import org.lwjgl.input.Mouse;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.GuiListButton;
 import net.minecraft.client.gui.GuiPageButtonList;
@@ -16,6 +13,10 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.village.MerchantRecipe;
 import net.minecraftforge.fml.client.GuiScrollingList;
+import org.lwjgl.input.Mouse;
+
+import java.io.IOException;
+import java.util.List;
 
 /**
  * Created by CF on 2017-02-21.
@@ -125,6 +126,12 @@ public class VillagerMarketScreen extends GuiContainer {
 
             @Override
             protected void drawSlot(int slotIdx, int entryRight, int slotTop, int slotBuffer, Tessellator tess) {
+                if (slotIdx == this.selectedIndex) {
+                    GlStateManager.color(0.4f, 0.4f, 0.4f);
+                } else {
+                    GlStateManager.color(1.0f, 1.0f, 1.0f);
+                }
+
                 String[] types = VillagerMarketScreen.this.container.getVillagerTypes();
                 if ((types != null) && (slotIdx > 0) && (slotIdx <= types.length)) {
                     VillagerMarketScreen.this.drawString(VillagerMarketScreen.this.fontRenderer,
@@ -132,6 +139,11 @@ public class VillagerMarketScreen extends GuiContainer {
                 } else {
                     VillagerMarketScreen.this.drawString(VillagerMarketScreen.this.fontRenderer,
                             "[ ALL ]", this.left + 1, slotTop, 0xFFFFFF);
+                }
+
+                if (slotIdx == this.selectedIndex) {
+                    // reset color change
+                    GlStateManager.color(1.0f, 1.0f, 1.0f);
                 }
             }
         };
@@ -164,6 +176,12 @@ public class VillagerMarketScreen extends GuiContainer {
 
             @Override
             protected void drawSlot(int slotIdx, int entryRight, int slotTop, int slotBuffer, Tessellator tess) {
+                if (slotIdx == this.selectedIndex) {
+                    GlStateManager.color(0.4f, 0.4f, 0.4f);
+                } else {
+                    GlStateManager.color(1.0f, 1.0f, 1.0f);
+                }
+
                 VillagerMarketScreen.this.mc.getTextureManager().bindTexture(VillagerMarketScreen.BACKGROUND);
                 VillagerMarketScreen.this.drawTexturedModalRect(this.left, slotTop, 2, 226, 151, 28);
 
@@ -192,6 +210,11 @@ public class VillagerMarketScreen extends GuiContainer {
                     VillagerMarketScreen.this.drawString(VillagerMarketScreen.this.fontRenderer,
                             "[" + String.valueOf(times) + " / " + String.valueOf(recipeInfo.getMaxUses()) + "]",
                             this.left + 1 + 100, slotTop + (this.slotHeight - VillagerMarketScreen.this.fontRenderer.FONT_HEIGHT) / 2, 0xFFFFFF);
+                }
+
+                if (slotIdx == this.selectedIndex) {
+                    // reset color change
+                    GlStateManager.color(1.0f, 1.0f, 1.0f);
                 }
             }
         };
@@ -282,6 +305,8 @@ public class VillagerMarketScreen extends GuiContainer {
 
     @Override
     protected void drawGuiContainerBackgroundLayer(float partialTicks, int mouseX, int mouseY) {
+        GlStateManager.color(1.0f, 1.0f, 1.0f, 1.0f);
+
         this.mc.getTextureManager().bindTexture(VillagerMarketScreen.BACKGROUND);
         this.drawTexturedModalRect(this.guiLeft, this.guiTop, 0, 0, 256, 209);
 
