@@ -1,0 +1,2 @@
+- update item highlight
+- fixed issues around server/client network handling
