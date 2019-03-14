@@ -8,15 +8,8 @@ import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 /**
  * Created by CF on 2017-02-22.
  */
-public class VillagerMarketNetworkPackage implements IMessage {
-    private NBTTagCompound compound;
-
-    @SuppressWarnings("unused")
-    public VillagerMarketNetworkPackage() { }
-
-    public VillagerMarketNetworkPackage(NBTTagCompound compound) {
-        this.compound = compound;
-    }
+public abstract class VillagerMarketPacket implements IMessage {
+    public NBTTagCompound compound;
 
     public NBTTagCompound getCompound() { return this.compound; }
 

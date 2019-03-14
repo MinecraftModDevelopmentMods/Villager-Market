@@ -62,8 +62,8 @@ public class VillagerMarketMod {
         NetworkRegistry.INSTANCE.registerGuiHandler(VillagerMarketMod.instance, new VillagerMarketGuiHandler());
 
         this.networkWrapper = new SimpleNetworkWrapper("VM|GUI");
-        this.networkWrapper.registerMessage(VillagerMarketNetworkHandler.class, VillagerMarketNetworkPackage.class, 1, Side.CLIENT);
-        this.networkWrapper.registerMessage(VillagerMarketNetworkHandler.class, VillagerMarketNetworkPackage.class, 1, Side.SERVER);
+        this.networkWrapper.registerMessage(VillagerMarketNetwork.ClientHandler.class, VillagerMarketPacketClient.class, 0, Side.CLIENT);
+        this.networkWrapper.registerMessage(VillagerMarketNetwork.ServerHandler.class, VillagerMarketPacketServer.class, 1, Side.SERVER);
     }
 
     static List<ItemStack> getCombinedInventory(IInventory inventory) {
@@ -137,10 +137,14 @@ public class VillagerMarketMod {
     }
 
     static void sendMessageToServer(NBTTagCompound message) {
-        VillagerMarketMod.instance.networkWrapper.sendToServer(new VillagerMarketNetworkPackage(message));
+        VillagerMarketMod.instance.networkWrapper.sendToServer(new VillagerMarketPacketServer(message));
     }
 
     static void sendMessageToClient(NBTTagCompound message, EntityPlayerMP player) {
-        VillagerMarketMod.instance.networkWrapper.sendTo(new VillagerMarketNetworkPackage(message), player);
+        VillagerMarketMod.instance.networkWrapper.sendTo(new VillagerMarketPacketClient(message), player);
+    }
+
+    static void sendMessageToClient(VillagerMarketPacketClient message, EntityPlayerMP player) {
+        VillagerMarketMod.instance.networkWrapper.sendTo(message, player);
     }
 }

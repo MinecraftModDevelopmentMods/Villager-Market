@@ -315,8 +315,13 @@ public class VillagerMarketScreen extends GuiContainer {
                 times = Math.min(times, VillagerMarketMod.getAmountOf(inventory, recipe.getSecondItemToBuy(), true, true));
             }
 
+            String maxUses = "-1";
+            if (this.currentRecipe != null) {
+                maxUses = String.valueOf(this.currentRecipe.getMaxUses());
+            }
+
             VillagerMarketScreen.this.drawString(VillagerMarketScreen.this.fontRenderer,
-                    "[" + String.valueOf(times) + " / " + String.valueOf(this.currentRecipe.getMaxUses()) + "]",
+                    "[" + String.valueOf(times) + " / " + maxUses + "]",
                     left + 1 + 100, top + (28 - VillagerMarketScreen.this.fontRenderer.FONT_HEIGHT) / 2, 0xFFFFFF);
 
             int uses = Math.min(this.currentRecipe.getUses(inventory, true), this.currentRecipe.getMaxUses());
