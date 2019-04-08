@@ -2,6 +2,8 @@ package net.ndrei.villagermarket;
 
 import java.util.List;
 import com.google.common.collect.Lists;
+import net.minecraftforge.items.IItemHandler;
+import net.minecraftforge.items.IItemHandlerModifiable;
 import org.apache.logging.log4j.Logger;
 import net.minecraft.creativetab.CreativeTabs;
 import net.minecraft.entity.player.EntityPlayerMP;
@@ -51,14 +53,6 @@ public class VillagerMarketMod {
         MinecraftForge.EVENT_BUS.register(new VillagerMarketEvents());
         VillagerMarketMod.villagerMarket = new VillagerMarketBlock();
 
-//        VillagerMarketMod.villagerMarket = new VillagerMarketBlock();
-//        VillagerMarketMod.villagerMarket.register();
-//        VillagerMarketMod.villagerMarket.setCreativeTab(VillagerMarketMod.creativeTab);
-//
-//        if (event.getSide() == Side.CLIENT) {
-//            VillagerMarketMod.villagerMarket.registerRenderer();
-//        }
-
         NetworkRegistry.INSTANCE.registerGuiHandler(VillagerMarketMod.instance, new VillagerMarketGuiHandler());
 
         this.networkWrapper = new SimpleNetworkWrapper("VM|GUI");
@@ -66,9 +60,9 @@ public class VillagerMarketMod {
         this.networkWrapper.registerMessage(VillagerMarketNetwork.ServerHandler.class, VillagerMarketPacketServer.class, 1, Side.SERVER);
     }
 
-    static List<ItemStack> getCombinedInventory(IInventory inventory) {
+    static List<ItemStack> getCombinedInventory(IItemHandler inventory) {
         List<ItemStack> list = Lists.newArrayList();
-        for (int i = 0; i < inventory.getSizeInventory(); i++) {
+        for (int i = 0; i < inventory.getSlots(); i++) {
             ItemStack stack = inventory.getStackInSlot(i);
             if (stack.isEmpty()) {
                 continue;
@@ -90,13 +84,13 @@ public class VillagerMarketMod {
         return list;
     }
 
-    static int extractFromCombinedInventory(IInventory inventory, ItemStack stack, int amount) {
+    static int extractFromCombinedInventory(IItemHandler inventory, ItemStack stack, int amount) {
         if (stack.isEmpty()) {
             return 0;
         }
 
         int taken = 0;
-        for (int i = 0; i < inventory.getSizeInventory(); i++) {
+        for (int i = 0; i < inventory.getSlots(); i++) {
             ItemStack temp = inventory.getStackInSlot(i);
             if (temp.isEmpty() || (temp.getItem() != stack.getItem())) {
                 continue;
@@ -104,9 +98,9 @@ public class VillagerMarketMod {
 
             ItemStack takenStack;
             if (temp.getCount() == amount) {
-                takenStack = inventory.removeStackFromSlot(i);
+                takenStack = inventory.extractItem(i, amount, false);
             } else {
-                takenStack = inventory.decrStackSize(i, Math.min(amount, temp.getCount()));
+                takenStack = inventory.extractItem(i, Math.min(amount, temp.getCount()), false);
             }
 
             taken += takenStack.getCount();

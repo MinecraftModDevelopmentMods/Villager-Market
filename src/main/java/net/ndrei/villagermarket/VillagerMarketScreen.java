@@ -186,7 +186,6 @@ public class VillagerMarketScreen extends GuiContainer {
                 VillagerMarketScreen.this.drawTexturedModalRect(this.left, slotTop, 2, 226, 151, 28);
 
                 List<VillagerMarketContainer.MerchantRecipeInfo> recipes = VillagerMarketScreen.this.getRecipes();
-                List<ItemStack> inventory = VillagerMarketScreen.this.container.getPlayerInventory();
                 if ((recipes != null) && (slotIdx >= 0) && (slotIdx < recipes.size())) {
                     VillagerMarketContainer.MerchantRecipeInfo recipeInfo = recipes.get(slotIdx);
                     MerchantRecipe recipe = recipeInfo.recipe;
@@ -202,13 +201,8 @@ public class VillagerMarketScreen extends GuiContainer {
                     GlStateManager.popMatrix();
                     RenderHelper.disableStandardItemLighting();
 
-                    int times = VillagerMarketMod.getAmountOf(inventory, recipe.getItemToBuy(), true, true);
-                    if (recipe.hasSecondItemToBuy()) {
-                        times = Math.min(times, VillagerMarketMod.getAmountOf(inventory, recipe.getSecondItemToBuy(), true, true));
-                    }
-
                     VillagerMarketScreen.this.drawString(VillagerMarketScreen.this.fontRenderer,
-                            "[" + String.valueOf(times) + " / " + String.valueOf(recipeInfo.getMaxUses()) + "]",
+                            "[" + recipeInfo.getTimes() + " / " + recipeInfo.getMaxUses() + "]",
                             this.left + 1 + 100, slotTop + (this.slotHeight - VillagerMarketScreen.this.fontRenderer.FONT_HEIGHT) / 2, 0xFFFFFF);
                 }
 
@@ -223,7 +217,7 @@ public class VillagerMarketScreen extends GuiContainer {
             @Override
             public void setEntryValue(int id, boolean value) {
                 if (id == 42) {
-                    /*VillagerMarketScreen.this.btn.setValue(*/VillagerMarketScreen.this.showAllRecipes = value/*)*/;
+                    VillagerMarketScreen.this.showAllRecipes = value;
                 }
             }
 
@@ -245,28 +239,21 @@ public class VillagerMarketScreen extends GuiContainer {
         this.btnMax = new GuiButton(4202, guiLeft + 196, guiTop + 180, 35, 20, "x 10");
         this.btnMax.visible = false;
         this.addButton(this.btnMax);
-
-//        this.guiLeft = guiLeft;
-//        this.guiTop = guiTop;
     }
 
     @Override
-    protected void actionPerformed(GuiButton button) throws IOException {
+    protected void actionPerformed(GuiButton button) {
         if ((button == null) || (this.currentRecipe == null)) {
             return;
         }
 
-        MerchantRecipe recipe = this.currentRecipe.recipe;
-        List<ItemStack> inventory = this.container.getPlayerInventory();
         NBTTagCompound compound = new NBTTagCompound();
         if (button.id == 4201) {
             // handle 'once' click
-            // this.currentRecipe.useRecipe(1);
             compound.setInteger("uses", 1);
         }
         else if (button.id == 4202) {
             // handle 'max' click
-            // this.currentRecipe.useRecipe(this.currentRecipe.getMaxUses());
             compound.setInteger("uses", this.currentRecipe.getMaxUses());
         }
 
@@ -290,10 +277,8 @@ public class VillagerMarketScreen extends GuiContainer {
 
     private List<VillagerMarketContainer.MerchantRecipeInfo> getRecipes() {
         List<VillagerMarketContainer.MerchantRecipeInfo> recipes = Lists.newArrayList();
-
-        List<ItemStack> inventory = this.container.getPlayerInventory();
         for(VillagerMarketContainer.MerchantRecipeInfo recipe : this.container.getRecipes(this.selectedVillagerType)) {
-            if (!this.showAllRecipes && (0 == recipe.getUses(inventory, true))) {
+            if (!this.showAllRecipes && (recipe.getTimes() == 0)) {
                 continue;
             }
 
@@ -318,7 +303,6 @@ public class VillagerMarketScreen extends GuiContainer {
         this.btn.drawButton(this.mc, mouseX, mouseY, partialTicks);
 
         if (this.currentRecipe != null) {
-            List<ItemStack> inventory = VillagerMarketScreen.this.container.getPlayerInventory();
             MerchantRecipe recipe = this.currentRecipe.recipe;
 
             RenderHelper.enableGUIStandardItemLighting();
@@ -335,22 +319,19 @@ public class VillagerMarketScreen extends GuiContainer {
             GlStateManager.popMatrix();
             RenderHelper.disableStandardItemLighting();
 
-            int times = VillagerMarketMod.getAmountOf(inventory, recipe.getItemToBuy(), true, true);
-            if (recipe.hasSecondItemToBuy()) {
-                times = Math.min(times, VillagerMarketMod.getAmountOf(inventory, recipe.getSecondItemToBuy(), true, true));
-            }
-
             String maxUses = "-1";
+            int times = 0;
             if (this.currentRecipe != null) {
                 maxUses = String.valueOf(this.currentRecipe.getMaxUses());
+                times = this.currentRecipe.getTimes();
             }
 
             VillagerMarketScreen.this.drawString(VillagerMarketScreen.this.fontRenderer,
-                    "[" + String.valueOf(times) + " / " + maxUses + "]",
+                    "[" + times + " / " + maxUses + "]",
                     left + 1 + 100, top + (28 - VillagerMarketScreen.this.fontRenderer.FONT_HEIGHT) / 2, 0xFFFFFF);
 
-            int uses = Math.min(this.currentRecipe.getUses(inventory, true), this.currentRecipe.getMaxUses());
-            this.btnMax.displayString = "x " + String.valueOf(uses);
+            int uses = Math.min(this.currentRecipe.getTimes(), this.currentRecipe.getMaxUses());
+            this.btnMax.displayString = "x " + uses;
             this.btnOnce.enabled = (uses > 0);
             this.btnMax.enabled = (uses > 0);
 

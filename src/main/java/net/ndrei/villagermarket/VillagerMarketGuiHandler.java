@@ -34,7 +34,7 @@ public class VillagerMarketGuiHandler implements IGuiHandler {
         BlockPos pos = new BlockPos(x, y, z);
         IBlockState state = world.getBlockState(pos);
         if (state.getBlock() == VillagerMarketMod.villagerMarket) {
-            return new VillagerMarketScreen(new VillagerMarketContainer(player));
+            return new VillagerMarketScreen(new VillagerMarketContainer(player, pos));
         }
 
         return null;
