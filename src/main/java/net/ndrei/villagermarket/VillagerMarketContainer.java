@@ -114,10 +114,13 @@ public class VillagerMarketContainer extends Container {
     }
 
     public MerchantRecipeInfo[] getRecipes(String villagerTypeFilter) {
+
+
         if (player.world.isRemote) {
             List<MerchantRecipeInfo> temp = merchantRecipes;
             if (villagerTypeFilter != null && !villagerTypeFilter.isEmpty()) {
-                temp = merchantRecipes.stream().filter((recipe) -> !recipe.getVillager().getDisplayName().getFormattedText().equals(villagerTypeFilter)).collect(Collectors.toList());
+                String filter = villagerTypeFilter.replace(((Character) (char) 167).toString() + "r", "");
+                temp = merchantRecipes.stream().filter((recipe) -> recipe != null && recipe.villager_type.equals(filter)).collect(Collectors.toList());
             }
             return temp.toArray(new MerchantRecipeInfo[0]);
         }
@@ -247,6 +250,7 @@ public class VillagerMarketContainer extends Container {
         public final MerchantRecipe recipe;
         public final int recipeIndex;
         public final int times;
+        public final String villager_type;
 
         public MerchantRecipeInfo (NBTTagCompound tag, VillagerMarketContainer container) {
             this.villager = null;
@@ -254,6 +258,7 @@ public class VillagerMarketContainer extends Container {
             this.villagerId = tag.getInteger("id");
             this.recipeIndex = tag.getInteger("recipeIndex");
             this.times = tag.getInteger("times");
+            this.villager_type = tag.getString("villager_name");
             this.recipe = new MerchantRecipe(tag.getCompoundTag("recipe"));
         }
 
@@ -264,6 +269,7 @@ public class VillagerMarketContainer extends Container {
             this.recipeIndex = recipeIndex;
             this.times = times;
             this.container = container;
+            this.villager_type = villager.getDisplayName().getUnformattedComponentText().replace("entity.Village", "");
         }
 
         public NBTTagCompound getAsNBT () {
@@ -272,6 +278,7 @@ public class VillagerMarketContainer extends Container {
             result.setInteger("recipeIndex", recipeIndex);
             result.setInteger("times", times);
             result.setTag("recipe", recipe.writeToTags());
+            result.setString("villager_name", villager.getDisplayName().getUnformattedComponentText().replace("entity.Villager.", ""));
             return result;
         }
 
