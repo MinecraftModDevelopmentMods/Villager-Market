@@ -83,8 +83,8 @@ public class VillagerMarketContainer extends Container {
             int villagerId = v.getInteger("entityId");
             MerchantRecipeList recipes = new MerchantRecipeList(v.getCompoundTag("recipes"));
 
-            if (!type.contains(profession)) {
-                type.add(profession);
+            if (!types.contains(profession)) {
+                types.add(profession);
             }
 
             infos.add(new VillagerInfo(profession, villagerId, recipes));
