@@ -1,6 +1,9 @@
 #future - 1.13
 
 #future
+- add automation support (slow redstone only, fast forge energy)
+
+#1.0.3
 
 #1.0.2
 - fixed #12 concurrent list CTD 
