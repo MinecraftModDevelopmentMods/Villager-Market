@@ -74,8 +74,8 @@ public class VillagerMarketContainer extends Container {
 
     void readServerCompound(NBTTagCompound compound) {
         NBTTagList list = compound.getTagList("villagers", Constants.NBT.TAG_COMPOUND);
-        this.villagerInfos = Lists.newArrayList();
-        this.villagerTypes = Lists.newArrayList();
+        final List<VillagerInfo> infos = Lists.newArrayList();
+        final List<String> types = Lists.newArrayList();
         for(int index = 0; index < list.tagCount(); index++) {
             NBTTagCompound v = list.getCompoundTagAt(index);
 
@@ -83,12 +83,14 @@ public class VillagerMarketContainer extends Container {
             int villagerId = v.getInteger("entityId");
             MerchantRecipeList recipes = new MerchantRecipeList(v.getCompoundTag("recipes"));
 
-            if (!this.villagerTypes.contains(profession)) {
-                this.villagerTypes.add(profession);
+            if (!types.contains(profession)) {
+                types.add(profession);
             }
 
-            this.villagerInfos.add(new VillagerInfo(profession, villagerId, recipes));
+            infos.add(new VillagerInfo(profession, villagerId, recipes));
         }
+        this.villagerInfos = infos;
+        this.villagerTypes = types;
     }
 
     @Override
