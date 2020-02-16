@@ -165,7 +165,6 @@ task signJar(type: SignJar, dependsOn: reobfJar) {
 
 build.dependsOn signJar
 tasks.publish.dependsOn build
-tasks.curseforge.dependsOn build
 tasks.publish.finalizedBy curseforge
 
 artifacts {
