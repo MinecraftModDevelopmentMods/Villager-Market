@@ -3,6 +3,7 @@
 #future
 
 #1.0.2
+- fixed #12 concurrent list CTD 
 
 #1.0.1
 - update item highlight

@@ -2,7 +2,7 @@ buildscript {
     repositories {
         mavenCentral()
         maven { url = "http://files.minecraftforge.net/maven" }
-        maven { url = "http://repo.maven.apache.org/maven2" }
+        maven { url = "https://repo.maven.apache.org/maven2" }
         maven { url = "https://plugins.gradle.org/m2/" }
         maven { url = "https://oss.sonatype.org/content/repositories/snapshots/" }
     }
@@ -164,6 +164,9 @@ task signJar(type: SignJar, dependsOn: reobfJar) {
 }
 
 build.dependsOn signJar
+tasks.publish.dependsOn build
+tasks.curseforge.dependsOn build
+tasks.publish.finalizedBy curseforge
 
 artifacts {
     archives sourceJar, deobfJar

@@ -110,7 +110,7 @@ public class VillagerMarketContainer extends Container {
                 if ((villagerTypeFilter == null) || (villagerTypeFilter.length() == 0)
                         || (Objects.equals(villager.getDisplayName().getFormattedText(), villagerTypeFilter))) {
                     int index = 0;
-                    for (MerchantRecipe recipe : villager.getRecipes(this.player)) {
+                    for (MerchantRecipe recipe : Objects.requireNonNull(villager.getRecipes(this.player)).toArray(new MerchantRecipe[0])) {
                         recipes.add(new MerchantRecipeInfo(villager, villager.getEntityId(), recipe, index++, this));
                     }
                 }
