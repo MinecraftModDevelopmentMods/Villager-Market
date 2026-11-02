@@ -1,0 +1,90 @@
+name: CI
+
+# Every pull request must build and pass on every Minecraft version before it can merge.
+# `all-versions` requires every version job and the release-script checks, so it is the one check for a ruleset on main to require.
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  release-scripts:
+    name: Release script checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - run: python3 .github/scripts/test_release_changelog.py
+      - run: python3 .github/scripts/test_release_commit.py
+      - run: python3 .github/scripts/test_curseforge_versions.py
+
+  mc-26-3:
+    name: Minecraft 26.3 (Fabric + NeoForge)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: |
+            21
+            25
+      - uses: gradle/actions/setup-gradle@v6
+
+      # Git must hold the sources in their 26.3 state; Stonecutter rewrites them when another version is active.
+      - name: Check the sources are committed with 26.3 active
+        run: |
+          ./gradlew "Reset active project"
+          git diff --exit-code
+
+      # Every version comment and replacement in stonecutter.gradle.kts has to turn back exactly, or switching the
+      # IDE to another version and back would rewrite code. The build itself never switches, so check it here.
+      - name: Check switching to 1.21.1 and back changes nothing
+        run: |
+          ./gradlew "Set active project to 1.21.1"
+          ./gradlew "Reset active project"
+          git diff --exit-code
+
+      - name: Unit tests, jars and server game tests
+        run: ./gradlew :26.3:test :fabric:26.3:build :neoforge:26.3:build :neoforge:26.3:runGameTestServer :fabric:26.3:runGametest
+
+      - name: Collect jars
+        run: ./gradlew collectJars
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: jars-26.3
+          path: build/libs/*/*.jar
+
+  mc-1-21-1:
+    name: Minecraft 1.21.1 (NeoForge)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: |
+            21
+            25
+      - uses: gradle/actions/setup-gradle@v6
+
+      - name: Unit tests, jar and server game tests
+        run: ./gradlew :1.21.1:test :neoforge:1.21.1:build :neoforge:1.21.1:runGameTestServer
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: jars-1.21.1
+          path: neoforge/versions/1.21.1/build/libs/villagermarket-neoforge-1.21.1-*.jar
+
+  all-versions:
+    name: all-versions
+    if: always()
+    needs: [mc-26-3, mc-1-21-1, release-scripts]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Every check passed
+        run: |
+          echo '${{ toJSON(needs) }}'
+          [ "${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'skipped') }}" = "false" ]

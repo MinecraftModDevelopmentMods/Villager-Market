@@ -1,0 +1,13 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": ["xxx", "xex", "xxx"],
+  "key": {
+    "x": "#minecraft:planks",
+    "e": "minecraft:emerald_block"
+  },
+  "result": {
+    "id": "villagermarket:villager_market",
+    "count": 1
+  }
+}

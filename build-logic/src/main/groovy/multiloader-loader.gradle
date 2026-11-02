@@ -1,0 +1,51 @@
+plugins {
+    id 'multiloader-common'
+}
+
+configurations {
+    // Only resolved here; the common project for the same Minecraft version provides them.
+    commonJava {
+        canBeResolved = true
+        canBeConsumed = false
+    }
+    commonResources {
+        canBeResolved = true
+        canBeConsumed = false
+    }
+}
+
+// The common project for this loader's Minecraft version, e.g. :26.3 for :fabric:26.3.
+def commonPath = ":${stonecutter.current.project}"
+
+dependencies {
+    compileOnly(project(commonPath)) {
+        def loaderAttribute = Attribute.of('io.github.mcgradleconventions.loader', String)
+        attributes {
+            attribute(loaderAttribute, 'common')
+        }
+    }
+    commonJava(project(path: commonPath, configuration: 'commonJava'))
+    commonResources(project(path: commonPath, configuration: 'commonResources'))
+}
+
+tasks.named('compileJava', JavaCompile) {
+    dependsOn(configurations.commonJava)
+    source(configurations.commonJava)
+}
+
+processResources {
+    dependsOn(configurations.commonResources)
+    from(configurations.commonResources)
+}
+
+tasks.named('javadoc', Javadoc).configure {
+    dependsOn(configurations.commonJava)
+    source(configurations.commonJava)
+}
+
+tasks.named('sourcesJar', Jar) {
+    dependsOn(configurations.commonJava)
+    from(configurations.commonJava)
+    dependsOn(configurations.commonResources)
+    from(configurations.commonResources)
+}

@@ -1,229 +1,75 @@
-buildscript {
-    repositories {
-        mavenCentral()
-        maven { url = "http://files.minecraftforge.net/maven" }
-        maven { url = "https://repo.maven.apache.org/maven2" }
-        maven { url = "https://plugins.gradle.org/m2/" }
-        maven { url = "https://oss.sonatype.org/content/repositories/snapshots/" }
-    }
-    dependencies {
-        classpath 'net.minecraftforge.gradle:ForgeGradle:2.3-SNAPSHOT'
-        classpath "gradle.plugin.com.matthewprenger:CurseGradle:${project.cursegradle_version}"
-    }
-}
-apply plugin: "net.minecraftforge.gradle.forge"
-apply plugin: 'com.matthewprenger.cursegradle'
-apply plugin: "maven-publish"
-apply plugin: "maven"
-
-archivesBaseName = project.mod_name.replace(' ', '-').toLowerCase()
-group = "${project.group_name}"
-
-version = "${project.minecraft_version}-${project.mod_version}"
-if (project.hasProperty('mod_suffix')) {
-    version += "-${project.mod_suffix}"
+plugins {
+    id 'multiloader-common'
+    id 'net.neoforged.moddev'
 }
 
-compileJava { sourceCompatibility = targetCompatibility = "1.8" }
-
-minecraft {
-    version = "${project.minecraft_version}-${project.forge_version}"
-    mappings = "${project.mcp_version}"
-    runDir = "run"
-
-    replace '@MOD-ID@', project.mod_id
-    replace '@MOD-NAME@', project.mod_name
-    replace '@MOD-VERSION@', project.mod_version
-    replace '@MOD-MC-VERSION@', project.minecraft_version
-    replace '@FORGE-VERSION@', project.forge_version
-    replace '@FINGERPRINT@', project.findProperty('signSHA1')
-
-    replaceIn 'Constants.java'
-
-    if (project.hasProperty('mc_username')) {
-        clientRunArgs += ['--username', "${project.mc_username}"]
-        if (project.hasProperty('mc_password')) {
-            clientRunArgs += ['--password=', "${project.mc_password}"]
-        }
-    }
-    if (project.hasProperty('mc_uuid')) {
-        clientRunArgs += ['--uuid', "${project.mc_uuid}"]
-    }
-
-    // disable server gui
-    serverRunArgs += "nogui"
-
-    // skip the screen to confirm that you want to load a world with missing registry entries
-    serverJvmArgs += "-Dfml.doNotBackup=true"
-    clientJvmArgs += "-Dfml.doNotBackup=true"
-
-    // skip having to confirm on server
-    serverJvmArgs += "-Dfml.queryResult=confirm"
-
-    // skip jansi warnings in the log
-    serverJvmArgs += "-Dlog4j.skipJansi=true"
-    clientJvmArgs += "-Dlog4j.skipJansi=true"
-
-    if (project.hasProperty('client_args')) {
-        clientJvmArgs += "${project.client_args}"
-    }
-    if (project.hasProperty('server_args')) {
-        serverJvmArgs += "${project.server_args}"
-    }
-}
-
-import groovy.json.JsonSlurper
-
-class Secrets {
-    def data = null
-
-    def getProperty(String key) {
-        return data ? data[key] : ''
-    }
-}
-
-def secretFile
-if (System.getenv().SECRET_FILE) {
-    secretFile = file System.getenv().SECRET_FILE
-} else {
-    secretFile = file 'secret.json'
-}
-
-project.ext.secret = new Secrets()
-if (secretFile.exists()) {
-    secretFile.withReader {
-        project.ext.secret.data = new JsonSlurper().parse it
+neoForge {
+    neoFormVersion = neo_form_version
+    // Automatically enable AccessTransformers if the file exists
+    def at = rootProject.file('src/main/resources/META-INF/accesstransformer.cfg')
+    if (at.exists()) {
+        accessTransformers.from(at.absolutePath)
     }
 }
 
 repositories {
     mavenCentral()
-    mavenLocal()
-    jcenter()
-    maven { name='mmd'; url='https://maven.mcmoddev.com' }
-
-    maven { name='jei'; url="http://dvs1.progwml6.com/files/maven" }
 }
 
 dependencies {
-    runtime "mezz.jei:jei_${project.minecraft_version}:${project.jei_version}+"
+    // Fabric and NeoForge both bundle Fabric Mixin, so it is safe to use it in common
+    // If you need to update, check what version they are using to see what is compatible
+    // https://github.com/neoforged/NeoForge/blob/26.3.x/gradle.properties#L37
+    // https://github.com/FabricMC/fabric-loader/blob/master/gradle.properties#L12
+    compileOnly('net.fabricmc:sponge-mixin:0.17.3+mixin.0.8.7')
+    // Fabric and NeoForge both bundle MixinExtras, so it is safe to use it in common
+    compileOnly(annotationProcessor('io.github.llamalad7:mixinextras-common:0.5.3'))
+
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.12.2'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    testRuntimeOnly 'com.google.code.gson:gson:2.14.0'
+    testRuntimeOnly 'org.slf4j:slf4j-nop:2.0.17'
 }
 
-processResources {
-    inputs.property "version", project.version
-    inputs.property "mcversion", project.minecraft.version
-    inputs.property "modid", project.mod_id
-    inputs.property "modname", project.mod_name
+tasks.named('test', Test) {
+    useJUnitPlatform()
+}
 
-    from(sourceSets.main.resources.srcDirs) {
-        include '**/*.info'
-        include '**/*.properties'
-
-        // replace version and mcversion
-        expand 'version':project.version, 'mcversion':project.minecraft.version, 'modid': project.mod_id, 'modname': project.mod_name
+configurations {
+    commonJava {
+        canBeResolved = false
+        canBeConsumed = true
     }
-
-    from(sourceSets.main.resources.srcDirs) {
-        exclude '**/*.info'
-        exclude '**/*.properties'
+    commonResources {
+        canBeResolved = false
+        canBeConsumed = true
     }
 }
-
-jar {
-    from sourceSets.api.output
-    from sourceSets.main.output
-}
-
-task sourcesJar(type: Jar) {
-    from sourceSets.api.allSource
-    from sourceSets.main.allSource
-    classifier = 'sources'
-}
-
-task deobfJar(type: Jar) {
-    from sourceSets.api.output
-    from sourceSets.main.output
-    classifier = 'deobf'
-}
-
-task signJar(type: SignJar, dependsOn: reobfJar) {
-    // Skips if the keyStore property is missing.
-    onlyIf {
-        project.hasProperty('keyStore')
-    }
-
-    // findProperty allows us to reference the property without it existing.
-    // Using project.propName would cause the script to fail validation if
-    // the property did not exist.
-    keyStore = project.findProperty('keyStore')
-    alias = project.findProperty('keyStoreAlias')
-    storePass = project.findProperty('keyStorePass')
-    keyPass = project.findProperty('keyStoreKeyPass')
-    inputFile = jar.archivePath
-    outputFile = jar.archivePath
-}
-
-build.dependsOn signJar
-tasks.publish.dependsOn build
-tasks.curseforge.dependsOn build
-tasks.publish.finalizedBy tasks.curseforge
 
 artifacts {
-    archives sourceJar, deobfJar
-}
-
-publishing {
-    publications {
-        mavenJava(MavenPublication) {
-            groupId project.group
-            artifactId project.archivesBaseName
-            def versionForMaven = "$project.minecraft_version-$project.mod_version"
-            if (System.getenv().BUILD_NUMBER) {
-                versionForMaven += '.' + System.getenv().BUILD_NUMBER
-            }
-            version versionForMaven
-            from components.java
-            artifact sourceJar {
-                classifier 'sources'
-            }
-            artifact deobfJar {
-                classifier 'deobf'
-            }
-        }
+    // Stonecutter generates the sources this version compiles, and the loaders compile those same files.
+    sourceSets.main.java.srcDirs.each { dir ->
+        add('commonJava', dir) { builtBy 'stonecutterGenerate' }
     }
-    repositories {
-        maven {
-            credentials {
-                username secret.username
-                password secret.password
-            }
-            url secret.url
-        }
+    sourceSets.main.resources.srcDirs.each { dir ->
+        add('commonResources', dir) { builtBy 'stonecutterGenerate' }
     }
 }
 
-curseforge {
-    if (project.hasProperty('cf_project_id') && project.hasProperty('cf_release_type') &&
-            ((project.cf_release_type == "alpha") || (project.cf_release_type == "beta") || (project.cf_release_type == "release"))) {
-        apiKey = secret.curseforgeAPIKey
-        project {
-            id = "$project.cf_project_id"
-            changelog = file('current-changelog.txt')
-            releaseType = project.cf_release_type
-            addGameVersion(project.minecraft_version)
-            def projectName = project.mod_name
-            def displayVersion = project.mod_version
-            if (System.getenv().BUILD_NUMBER) {
-                displayVersion += '.' + System.getenv().BUILD_NUMBER
-            }
-            mainArtifact(jar) {
-                displayName = "$project.mod_name : $displayVersion"
-            }
-            addArtifact(sourceJar) {
-                displayName = "$project.mod_name : $displayVersion : Sources"
-            }
-            addArtifact(deobfJar) {
-                displayName = "$project.mod_name : $displayVersion : Development"
+// Implement mcgradleconventions loader attribute
+def loaderAttribute = Attribute.of('io.github.mcgradleconventions.loader', String)
+['apiElements', 'runtimeElements', 'sourcesElements', 'javadocElements'].each { variant ->
+    configurations.named(variant) {
+        attributes {
+            attribute(loaderAttribute, 'common')
+        }
+    }
+}
+sourceSets.configureEach {
+    [it.compileClasspathConfigurationName, it.runtimeClasspathConfigurationName].each { variant->
+        configurations.named(variant) {
+            attributes {
+                attribute(loaderAttribute, 'common')
             }
         }
     }
