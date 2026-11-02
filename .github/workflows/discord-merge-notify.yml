@@ -1,0 +1,26 @@
+name: Discord merge notify
+on:
+  pull_request:
+    types: [closed]
+jobs:
+  notify:
+    if: github.event.pull_request.merged == true && github.event.pull_request.base.ref == 'main'
+    runs-on: ubuntu-latest
+    steps:
+      # The merge commit and its first parent, so the script can see which changelog bullets the merge added.
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
+          fetch-depth: 2
+
+      - name: Post the title and new changelog bullets
+        env:
+          WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+          MERGE: ${{ github.event.pull_request.merge_commit_sha }}
+          REPO: ${{ github.event.repository.name }}
+          NUMBER: ${{ github.event.pull_request.number }}
+          TITLE: ${{ github.event.pull_request.title }}
+          URL: ${{ github.event.pull_request.html_url }}
+        run: |
+          bash .github/scripts/discord-merge-message.sh "$MERGE" "$REPO" "$NUMBER" "$TITLE" "$URL" \
+            | curl -sf -H "Content-Type: application/json" -d @- "$WEBHOOK"

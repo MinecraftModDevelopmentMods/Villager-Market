@@ -1,0 +1,27 @@
+name: Inspect release metadata
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  curseforge:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Validate target game versions without uploading
+        env:
+          CURSEFORGE_TOKEN: ${{ secrets.CURSEFORGE_TOKEN }}
+        run: |
+          set -euo pipefail
+          curl --fail-with-body -sS -H "X-Api-Token: ${CURSEFORGE_TOKEN}" \
+            https://minecraft.curseforge.com/api/game/versions > versions.json
+          curl --fail-with-body -sS -H "X-Api-Token: ${CURSEFORGE_TOKEN}" \
+            https://minecraft.curseforge.com/api/game/version-types > types.json
+          jq --slurpfile types types.json '[$types[0][] | select(.slug == "environment") | .id] as $ids | [.[] | select(.gameVersionTypeID as $id | $ids | index($id))]' versions.json
+          python3 .github/scripts/curseforge-version-ids.py versions.json types.json 1.21.1 NeoForge "Java 21"
+          python3 .github/scripts/curseforge-version-ids.py versions.json types.json 26.3 Fabric "Java 25"
+          python3 .github/scripts/curseforge-version-ids.py versions.json types.json 26.3 NeoForge "Java 25"

@@ -1,0 +1,146 @@
+plugins {
+    id 'java-library'
+    id 'maven-publish'
+}
+
+// Version projects sit at :<mc> for the common code and :<loader>:<mc> for fabric and neoforge.
+def loaderName = project.parent == rootProject ? 'common' : project.parent.name
+// The common project for this Minecraft version, e.g. :26.3 for :fabric:26.3.
+def commonProject = loaderName == 'common' ? project : rootProject.project(":${project.name}")
+// stonecutter.gradle.kts gives each branch its own Gradle group; published jars keep the mod's group.
+def modGroup = rootProject.group
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    // Null annotations: newer Minecraft ships JSpecify, 1.21.1 doesn't.
+    compileOnly 'org.jspecify:jspecify:1.0.0'
+}
+
+base {
+    archivesName = "${mod_id}-${loaderName}-${minecraft_version}"
+}
+
+// A file under versions/<mc>/src replaces the shared file at the same path, for the common code and for this
+// project's own branch. Stonecutter already drops the shared copy when it processes an inactive version, but the
+// active version compiles the shared folders as they are, so the shared copy is left out here as well.
+def versionOverrides = [rootProject.projectDir, project.parent.projectDir].unique().collectMany { branchDir ->
+    ['java', 'resources'].collect { kind ->
+        [shared: new File(branchDir, "src/main/${kind}").toPath(), local: new File(branchDir, "versions/${project.name}/src/main/${kind}")]
+    }
+}
+def overridden = { FileTreeElement element ->
+    !element.directory && versionOverrides.any { dirs ->
+        element.file.toPath().startsWith(dirs.shared) && new File(dirs.local, element.relativePath.pathString).exists()
+    }
+}
+// The active version compiles the shared sources directly. Its merge task writes those same folders, so the
+// tasks that read them have to depend on the merge or Gradle rejects the implicit dependency. Inactive
+// versions compile Stonecutter's generated copy; depending on their merge would copy that version back
+// over the shared sources.
+def activeVersion = stonecutter.current.isActive
+if (activeVersion) {
+    tasks.matching { it.name == 'stonecutterGenerate' || it.name == 'stonecutterGenerateTest' }.configureEach {
+        dependsOn(it.name == 'stonecutterGenerate' ? 'stonecutterMerge' : 'stonecutterMergeTest')
+    }
+}
+
+tasks.withType(SourceTask).configureEach { task ->
+    if (task.name.startsWith('stonecutter')) return
+    exclude(overridden)
+    if (activeVersion) {
+        dependsOn(task.name.toLowerCase().contains('test') ? 'stonecutterMergeTest' : 'stonecutterMerge')
+    }
+}
+tasks.withType(AbstractCopyTask).configureEach { task ->
+    if (task.name.startsWith('stonecutter')) return
+    exclude(overridden)
+    if (activeVersion) {
+        dependsOn(task.name.toLowerCase().contains('test') ? 'stonecutterMergeTest' : 'stonecutterMerge')
+    }
+}
+
+java {
+    toolchain.languageVersion = JavaLanguageVersion.of(java_version)
+    withSourcesJar()
+    withJavadocJar()
+}
+
+tasks.withType(Jar).configureEach {
+    from(rootProject.file('LICENSE')) {
+        rename { "${it}_${mod_name}" }
+    }
+}
+
+jar {
+
+    manifest {
+        attributes([
+                'Specification-Title'   : mod_name,
+                'Specification-Vendor'  : mod_author,
+                'Specification-Version' : project.jar.archiveVersion,
+                'Implementation-Title'  : project.name,
+                'Implementation-Version': project.jar.archiveVersion,
+                'Implementation-Vendor' : mod_author,
+                'Built-On-Minecraft'    : minecraft_version
+        ])
+    }
+}
+
+processResources {
+    var expandProps = [
+            'version'                      : version,
+            'group'                        : modGroup, //Else we target the task's group.
+            'minecraft_version'            : minecraft_version,
+            'minecraft_version_range'      : minecraft_version_range,
+            // Only one loader's nodes define each loader's versions.
+            'fabric_version'               : findProperty('fabric_version') ?: '',
+            'fabric_loader_version'        : findProperty('fabric_loader_version') ?: '',
+            'mod_name'                     : mod_name,
+            'mod_author'                   : mod_author,
+            'mod_id'                       : mod_id,
+            'license'                      : license,
+            'description'                  : project.description,
+            'neoforge_version'             : findProperty('neoforge_version') ?: '',
+            'neoforge_loader_version_range': findProperty('neoforge_loader_version_range') ?: '',
+            'jade_version'                 : findProperty('jade_version') ?: '',
+            'jei_version'                  : findProperty('jei_version') ?: '',
+            'credits'                      : credits,
+            'java_version'                 : java_version,
+            // Mixins only some versions have, as quoted names with a trailing comma, from versions/<mc>/gradle.properties.
+            'extra_mixins'                 : commonProject.findProperty('extra_mixins') ?: '',
+            // The same for client-only mixins.
+            'extra_client_mixins'          : commonProject.findProperty('extra_client_mixins') ?: ''
+    ]
+
+    var jsonExpandProps = expandProps.collectEntries {
+        key, value -> [(key): value instanceof String ? value.replace('\n', '\\\\n') : value]
+    }
+
+    filesMatching(['META-INF/mods.toml', 'META-INF/neoforge.mods.toml']) {
+        expand expandProps
+    }
+
+    filesMatching(['pack.mcmeta', 'fabric.mod.json', '*.mixins.json']) {
+        expand jsonExpandProps
+    }
+
+    inputs.properties(expandProps)
+}
+
+publishing {
+    publications {
+        register('mavenJava', MavenPublication) {
+            groupId modGroup
+            artifactId base.archivesName.get()
+            from components.java
+        }
+    }
+    repositories {
+        maven {
+            url System.getenv('local_maven_url')
+        }
+    }
+}

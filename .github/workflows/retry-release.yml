@@ -1,0 +1,90 @@
+name: Retry release publication
+
+# Uses the original tag's built jars and notes, with the publishing scripts on
+# main. This repairs a partial publication without moving a tag or rebuilding.
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing release tag
+        required: true
+        type: string
+      run_id:
+        description: Failed Release run containing the original artifacts
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  retry:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Validate the tag and original build
+        id: meta
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag }}
+          RUN_ID: ${{ inputs.run_id }}
+        run: |
+          set -euo pipefail
+          [[ "$RUN_ID" =~ ^[0-9]+$ ]]
+          version=$(bash .github/scripts/release-version.sh parse "$TAG")
+          sha=$(git rev-parse "refs/tags/${TAG}^{commit}")
+          git merge-base --is-ancestor "$sha" origin/main
+          gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${RUN_ID}" > "$RUNNER_TEMP/release-run.json"
+          jq -e --arg tag "$TAG" --arg sha "$sha" '
+            .head_branch == $tag and .head_sha == $sha and .event == "push"
+            and .path == ".github/workflows/release.yml"
+            and .status == "completed" and .conclusion == "failure"
+          ' "$RUNNER_TEMP/release-run.json" >/dev/null
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+          echo "channel=$(bash .github/scripts/release-version.sh channel "$TAG")" >> "$GITHUB_OUTPUT"
+          echo "next=$(bash .github/scripts/release-version.sh next "$version")" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/download-artifact@v7
+        with:
+          name: release-notes
+          path: ${{ runner.temp }}/release-notes
+          run-id: ${{ inputs.run_id }}
+          github-token: ${{ github.token }}
+
+      - uses: actions/download-artifact@v7
+        with:
+          pattern: jars-*
+          path: ${{ runner.temp }}/release-jars
+          run-id: ${{ inputs.run_id }}
+          github-token: ${{ github.token }}
+
+      - name: Complete publication
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
+          CURSEFORGE_TOKEN: ${{ secrets.CURSEFORGE_TOKEN }}
+          MODRINTH_PROJECT_ID: ${{ vars.MODRINTH_PROJECT_ID }}
+          CURSEFORGE_PROJECT_ID: ${{ vars.CURSEFORGE_PROJECT_ID }}
+          TAG: ${{ inputs.tag }}
+          VERSION: ${{ steps.meta.outputs.version }}
+          RELEASE_TYPE: ${{ steps.meta.outputs.channel }}
+        run: bash .github/scripts/release-publish.sh upload "$VERSION" "$RUNNER_TEMP/release-notes/release-notes.md" "$RUNNER_TEMP/release-jars"
+
+      - name: Validate and commit the next version to main
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag }}
+          VERSION: ${{ steps.meta.outputs.version }}
+          NEXT: ${{ steps.meta.outputs.next }}
+        run: bash .github/scripts/release-commit.sh "$VERSION" "$NEXT" "$TAG"

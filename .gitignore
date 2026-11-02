@@ -1,22 +1,22 @@
-# eclipse
-bin
+# private agent/design docs live in faceofcat/mod-design
+AGENTS.md
+.agent/
+docs/
+.cursor/
+# build
+.gradle/
+build/
+run/
+runs/
+out/
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+bin/
 *.launch
-.settings
+.settings/
 .metadata
 .classpath
 .project
-
-# idea
-out
-*.ipr
-*.iws
-*.iml
-.idea
-
-# gradle
-build
-.gradle
-
-# other
-eclipse
-run

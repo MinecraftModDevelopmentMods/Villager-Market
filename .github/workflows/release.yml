@@ -1,0 +1,199 @@
+name: Release
+
+# Tag 0.0.1 to publish a release, or 0.0.1-alpha / 0.0.1-beta for that channel. A leading v
+# is also accepted. The version edit is made in the build checkout only, so the tag stays
+# on the commit you tagged. After the upload, the action commits the next patch to main
+# and moves the published notes under that version.
+#
+# Repository secrets: MODRINTH_TOKEN, CURSEFORGE_TOKEN.
+# Repository variables: MODRINTH_PROJECT_ID, CURSEFORGE_PROJECT_ID.
+# Tag a commit that is already on main. This file, on that commit, is what runs.
+on:
+  push:
+    tags:
+      - "[0-9]+.[0-9]+.[0-9]+"
+      - "[0-9]+.[0-9]+.[0-9]+-alpha"
+      - "[0-9]+.[0-9]+.[0-9]+-beta"
+      - "v[0-9]+.[0-9]+.[0-9]+"
+      - "v[0-9]+.[0-9]+.[0-9]+-alpha"
+      - "v[0-9]+.[0-9]+.[0-9]+-beta"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  notes:
+    name: Check the tag
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.meta.outputs.version }}
+      next: ${{ steps.meta.outputs.next }}
+      channel: ${{ steps.meta.outputs.channel }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: The tag is on main
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          git merge-base --is-ancestor "$GITHUB_SHA" origin/main || {
+            echo "The tag is not on main. Tag a commit that is already on main."
+            exit 1
+          }
+
+      - name: Secrets and the changelog
+        id: meta
+        env:
+          MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
+          CURSEFORGE_TOKEN: ${{ secrets.CURSEFORGE_TOKEN }}
+          MODRINTH_PROJECT_ID: ${{ vars.MODRINTH_PROJECT_ID }}
+          CURSEFORGE_PROJECT_ID: ${{ vars.CURSEFORGE_PROJECT_ID }}
+        run: |
+          set -euo pipefail
+          bash .github/scripts/release-publish.sh check-env
+          version=$(bash .github/scripts/release-version.sh parse "$GITHUB_REF_NAME")
+          channel=$(bash .github/scripts/release-version.sh channel "$GITHUB_REF_NAME")
+          next=$(bash .github/scripts/release-version.sh next "$version")
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+          echo "channel=${channel}" >> "$GITHUB_OUTPUT"
+          echo "next=${next}" >> "$GITHUB_OUTPUT"
+          bash .github/scripts/release-changelog.sh notes CHANGELOG.md "$version" > release-notes.md
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: release-notes
+          path: release-notes.md
+
+  mc-26-3:
+    name: Minecraft 26.3 (Fabric + NeoForge)
+    needs: notes
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: |
+            21
+            25
+      - uses: gradle/actions/setup-gradle@v6
+
+      - name: Check the sources are committed with 26.3 active
+        run: |
+          ./gradlew "Reset active project"
+          git diff --exit-code
+
+      - name: Check switching to 1.21.1 and back changes nothing
+        run: |
+          ./gradlew "Set active project to 1.21.1"
+          ./gradlew "Reset active project"
+          git diff --exit-code
+
+      - name: Set the published version
+        run: bash .github/scripts/release-version.sh write gradle.properties "${{ needs.notes.outputs.version }}"
+
+      - name: Unit tests and jars
+        run: ./gradlew :26.3:test :fabric:26.3:build :neoforge:26.3:build :neoforge:26.3:runGameTestServer :fabric:26.3:runGametest
+
+      - name: Collect jars
+        run: ./gradlew collectJars
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: jars-26.3
+          if-no-files-found: error
+          path: |
+            build/libs/*/villagermarket-fabric-26.3-*.jar
+            build/libs/*/villagermarket-neoforge-26.3-*.jar
+            !**/*-sources.jar
+            !**/*-javadoc.jar
+            !**/*-dev.jar
+
+  mc-1-21-1:
+    name: Minecraft 1.21.1 (NeoForge)
+    needs: notes
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: |
+            21
+            25
+      - uses: gradle/actions/setup-gradle@v6
+
+      - name: Set the published version
+        run: bash .github/scripts/release-version.sh write gradle.properties "${{ needs.notes.outputs.version }}"
+
+      - name: Unit tests and jar
+        run: ./gradlew :1.21.1:test :neoforge:1.21.1:build :neoforge:1.21.1:runGameTestServer
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: jars-1.21.1
+          if-no-files-found: error
+          path: |
+            neoforge/versions/1.21.1/build/libs/villagermarket-neoforge-1.21.1-*.jar
+            !**/*-sources.jar
+            !**/*-javadoc.jar
+            !**/*-dev.jar
+
+  publish:
+    name: Publish
+    needs: [notes, mc-26-3, mc-1-21-1]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/download-artifact@v7
+        with:
+          name: release-notes
+          path: notes
+
+      - uses: actions/download-artifact@v7
+        with:
+          pattern: jars-*
+          path: jars
+
+      - name: Upload the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
+          CURSEFORGE_TOKEN: ${{ secrets.CURSEFORGE_TOKEN }}
+          MODRINTH_PROJECT_ID: ${{ vars.MODRINTH_PROJECT_ID }}
+          CURSEFORGE_PROJECT_ID: ${{ vars.CURSEFORGE_PROJECT_ID }}
+          RELEASE_TYPE: ${{ needs.notes.outputs.channel }}
+          TAG: ${{ github.ref_name }}
+        run: bash .github/scripts/release-publish.sh upload "${{ needs.notes.outputs.version }}" notes/release-notes.md jars
+
+  bump:
+    name: Next version
+    timeout-minutes: 60
+    needs: [notes, publish]
+    if: needs.publish.result == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Validate and commit the next version to main
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.notes.outputs.version }}
+          NEXT: ${{ needs.notes.outputs.next }}
+          TAG: ${{ github.ref_name }}
+        run: bash .github/scripts/release-commit.sh "$VERSION" "$NEXT" "$TAG"
