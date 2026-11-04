@@ -16,9 +16,20 @@ import java.util.List;
 
 // 1.21.1 still draws with GuiGraphics. The 26.3 screen is the shared file.
 public class VillagerMarketScreen extends AbstractContainerScreen<VillagerMarketMenu> {
-    private static final ResourceLocation TEXTURE = ResourceLocation.fromNamespaceAndPath("villagermarket", "textures/gui/gui.png");
-    private static final int TEXT = 0xFFFFFFFF;
-    private static final int SELECTED = 0x886B4A2A;
+    private static final ResourceLocation BUTTON = ResourceLocation.withDefaultNamespace("widget/button");
+    private static final ResourceLocation BUTTON_HIGHLIGHTED = ResourceLocation.withDefaultNamespace("widget/button_highlighted");
+    private static final ResourceLocation BUTTON_DISABLED = ResourceLocation.withDefaultNamespace("widget/button_disabled");
+    private static final ResourceLocation SLOT = ResourceLocation.withDefaultNamespace("container/slot");
+    private static final ResourceLocation TRADE_ARROW = ResourceLocation.withDefaultNamespace("container/villager/trade_arrow");
+    private static final ResourceLocation TRADE_ARROW_OUT = ResourceLocation.withDefaultNamespace("container/villager/trade_arrow_out_of_stock");
+    private static final ResourceLocation SCROLLER = ResourceLocation.withDefaultNamespace("widget/scroller");
+    private static final ResourceLocation SCROLLER_BACKGROUND = ResourceLocation.withDefaultNamespace("widget/scroller_background");
+    private static final int PANEL = 0xFFC6C6C6;
+    private static final int HIGHLIGHT = 0xFFFFFFFF;
+    private static final int SHADOW = 0xFF555555;
+    private static final int BORDER = 0xFF000000;
+    private static final int LABEL = 0xFF404040;
+    private static final int BUTTON_TEXT = 0xFFFFFFFF;
     private final MarketScreenLogic logic = new MarketScreenLogic();
     private ItemStack hovered = ItemStack.EMPTY;
 
@@ -43,58 +54,130 @@ public class VillagerMarketScreen extends AbstractContainerScreen<VillagerMarket
     protected void renderBg(GuiGraphics graphics, float partialTick, int mouseX, int mouseY) {
         int left = this.leftPos;
         int top = this.topPos;
-        graphics.blit(TEXTURE, left, top, 0, 0, this.imageWidth, this.imageHeight);
-        int row = this.font.lineHeight + 2;
+        drawPanel(graphics, left, top);
+        graphics.drawString(this.font, this.title, left + 8, top + 6, LABEL, false);
         List<String> groups = logic.groups(this.menu.offers());
-        drawGroup(graphics, left, top, row, 0, logic.selectedGroup.isEmpty(), Component.translatable("gui.villagermarket.all"));
+        graphics.enableScissor(left + MarketScreenLogic.GROUP_X, top + MarketScreenLogic.GROUP_Y,
+                left + MarketScreenLogic.GROUP_X + MarketScreenLogic.GROUP_W, top + MarketScreenLogic.GROUP_Y + MarketScreenLogic.GROUP_H);
+        drawGroup(graphics, left, top, mouseX, mouseY, 0, logic.selectedGroup.isEmpty(), Component.translatable("gui.villagermarket.all"));
         for (int i = 0; i < groups.size(); i++) {
-            drawGroup(graphics, left, top, row, i + 1, groups.get(i).equals(logic.selectedGroup), groupLabel(groups.get(i)));
+            drawGroup(graphics, left, top, mouseX, mouseY, i + 1, groups.get(i).equals(logic.selectedGroup), groupLabel(groups.get(i)));
         }
+        graphics.disableScissor();
         hovered = ItemStack.EMPTY;
         List<ListedOffer> shown = logic.visible(this.menu.offers(), this.minecraft.player.getInventory());
+        logic.fitOffer(shown.size());
+        int offerW = MarketScreenLogic.offerWidth(shown.size());
+        graphics.enableScissor(left + MarketScreenLogic.OFFER_X, top + MarketScreenLogic.OFFER_Y,
+                left + MarketScreenLogic.OFFER_X + offerW, top + MarketScreenLogic.OFFER_Y + MarketScreenLogic.OFFER_H);
         for (int i = logic.offerScroll; i < shown.size(); i++) {
             int y = top + MarketScreenLogic.OFFER_Y + (i - logic.offerScroll) * MarketScreenLogic.OFFER_ROW;
             if (y + MarketScreenLogic.OFFER_ROW > top + MarketScreenLogic.OFFER_Y + MarketScreenLogic.OFFER_H) {
                 break;
             }
-            ListedOffer offer = shown.get(i);
-            if (logic.selected != null && logic.selected.villagerId() == offer.villagerId() && logic.selected.offerIndex() == offer.offerIndex()) {
-                graphics.fill(left + MarketScreenLogic.OFFER_X, y, left + MarketScreenLogic.OFFER_X + MarketScreenLogic.OFFER_W, y + MarketScreenLogic.OFFER_ROW, SELECTED);
-            }
-            drawOffer(graphics, offer, left + MarketScreenLogic.OFFER_X, y, mouseX, mouseY);
+            drawOffer(graphics, shown.get(i), left + MarketScreenLogic.OFFER_X, y, offerW, mouseX, mouseY);
         }
-        graphics.fill(left + MarketScreenLogic.SHOW_X, top + MarketScreenLogic.SHOW_Y,
-                left + MarketScreenLogic.SHOW_X + MarketScreenLogic.SHOW_W, top + MarketScreenLogic.SHOW_Y + MarketScreenLogic.SHOW_H,
-                logic.showAll ? SELECTED : 0x66000000);
-        graphics.drawString(this.font, Component.translatable("gui.villagermarket.show_all"), left + MarketScreenLogic.SHOW_X + 4, top + MarketScreenLogic.SHOW_Y + 6, TEXT, false);
+        graphics.disableScissor();
+        drawOfferBar(graphics, left, top, shown.size());
+        graphics.drawString(this.font, Component.translatable("gui.villagermarket.offer_count"),
+                left + MarketScreenLogic.OFFER_X, top + MarketScreenLogic.COUNT_Y, LABEL, false);
+        Component show = Component.translatable(logic.showAll ? "gui.villagermarket.show_all" : "gui.villagermarket.available");
+        drawButton(graphics, left + MarketScreenLogic.SHOW_X, top + MarketScreenLogic.SHOW_Y, MarketScreenLogic.SHOW_W, MarketScreenLogic.SHOW_H,
+                show, true, logic.showAll || inside(mouseX, mouseY, left + MarketScreenLogic.SHOW_X, top + MarketScreenLogic.SHOW_Y, MarketScreenLogic.SHOW_W, MarketScreenLogic.SHOW_H));
         if (logic.selected != null) {
-            drawOffer(graphics, logic.selected, left + 5, top + MarketScreenLogic.SELECTED_Y, mouseX, mouseY);
-            int affordable = logic.affordable(logic.selected, this.minecraft.player.getInventory());
-            drawButton(graphics, left + MarketScreenLogic.ONCE_X, top + MarketScreenLogic.BUTTON_Y, Component.translatable("gui.villagermarket.once"), affordable > 0);
-            drawButton(graphics, left + MarketScreenLogic.MAX_X, top + MarketScreenLogic.BUTTON_Y, Component.literal("x " + affordable), affordable > 0);
+            Inventory inventory = this.minecraft.player.getInventory();
+            boolean second = !logic.selected.costB().isEmpty();
+            drawHeld(graphics, logic.selected.costA(), left + MarketScreenLogic.costSlotX(0, second), top + MarketScreenLogic.COST_Y, mouseX, mouseY, inventory);
+            if (second) {
+                drawHeld(graphics, logic.selected.costB(), left + MarketScreenLogic.costSlotX(1, true), top + MarketScreenLogic.COST_Y, mouseX, mouseY, inventory);
+            }
+            int affordable = logic.affordable(logic.selected, inventory);
+            drawButton(graphics, left + MarketScreenLogic.ONCE_X, top + MarketScreenLogic.BUTTON_Y, MarketScreenLogic.BUTTON_W, MarketScreenLogic.BUTTON_H,
+                    Component.translatable("gui.villagermarket.once"), affordable > 0,
+                    inside(mouseX, mouseY, left + MarketScreenLogic.ONCE_X, top + MarketScreenLogic.BUTTON_Y, MarketScreenLogic.BUTTON_W, MarketScreenLogic.BUTTON_H));
+            drawButton(graphics, left + MarketScreenLogic.MAX_X, top + MarketScreenLogic.BUTTON_Y, MarketScreenLogic.BUTTON_W, MarketScreenLogic.BUTTON_H,
+                    Component.literal("x " + affordable), affordable > 0,
+                    inside(mouseX, mouseY, left + MarketScreenLogic.MAX_X, top + MarketScreenLogic.BUTTON_Y, MarketScreenLogic.BUTTON_W, MarketScreenLogic.BUTTON_H));
         }
         if (!hovered.isEmpty()) {
             graphics.renderTooltip(this.font, hovered, mouseX, mouseY);
         }
     }
 
-    private void drawGroup(GuiGraphics graphics, int left, int top, int row, int index, boolean selected, Component label) {
-        int y = top + MarketScreenLogic.GROUP_Y + (index - logic.groupScroll) * row;
-        if (y < top + MarketScreenLogic.GROUP_Y || y + row > top + MarketScreenLogic.GROUP_Y + MarketScreenLogic.GROUP_H) {
-            return;
-        }
-        if (selected) {
-            graphics.fill(left + MarketScreenLogic.GROUP_X, y, left + MarketScreenLogic.GROUP_X + MarketScreenLogic.GROUP_W, y + row, SELECTED);
-        }
-        graphics.drawString(this.font, label, left + MarketScreenLogic.GROUP_X + 2, y + 1, TEXT, false);
+    private void drawPanel(GuiGraphics graphics, int x, int y) {
+        int right = x + MarketScreenLogic.WIDTH;
+        int bottom = y + MarketScreenLogic.HEIGHT;
+        graphics.fill(x, y, right, bottom, PANEL);
+        graphics.fill(x + 1, y + 1, right - 1, y + 3, HIGHLIGHT);
+        graphics.fill(x + 1, y + 1, x + 3, bottom - 1, HIGHLIGHT);
+        graphics.fill(x + 3, bottom - 3, right - 1, bottom - 1, SHADOW);
+        graphics.fill(right - 3, y + 3, right - 1, bottom - 1, SHADOW);
+        graphics.fill(x, y, right, y + 1, BORDER);
+        graphics.fill(x, bottom - 1, right, bottom, BORDER);
+        graphics.fill(x, y, x + 1, bottom, BORDER);
+        graphics.fill(right - 1, y, right, bottom, BORDER);
     }
 
-    private void drawOffer(GuiGraphics graphics, ListedOffer offer, int x, int y, int mouseX, int mouseY) {
-        drawStack(graphics, offer.costA(), x + 5, y + 5, mouseX, mouseY);
-        drawStack(graphics, offer.costB(), x + 30, y + 5, mouseX, mouseY);
-        drawStack(graphics, offer.result(), x + 73, y + 5, mouseX, mouseY);
+    private void drawGroup(GuiGraphics graphics, int left, int top, int mouseX, int mouseY, int index, boolean selected, Component label) {
+        int x = left + MarketScreenLogic.GROUP_X;
+        int y = top + MarketScreenLogic.GROUP_Y + (index - logic.groupScroll) * MarketScreenLogic.GROUP_ROW;
+        if (y + MarketScreenLogic.GROUP_ROW <= top + MarketScreenLogic.GROUP_Y || y >= top + MarketScreenLogic.GROUP_Y + MarketScreenLogic.GROUP_H) {
+            return;
+        }
+        boolean hot = selected || inside(mouseX, mouseY, x, y, MarketScreenLogic.GROUP_W, MarketScreenLogic.GROUP_ROW);
+        blitButton(graphics, x, y, MarketScreenLogic.GROUP_W, MarketScreenLogic.GROUP_ROW, true, hot);
+        graphics.drawString(this.font, label, x + 4, y + 6, BUTTON_TEXT, true);
+    }
+
+    private void drawOffer(GuiGraphics graphics, ListedOffer offer, int x, int y, int width, int mouseX, int mouseY) {
+        boolean selected = logic.selected != null && logic.selected.villagerId() == offer.villagerId() && logic.selected.offerIndex() == offer.offerIndex();
+        boolean hot = selected || inside(mouseX, mouseY, x, y, width, MarketScreenLogic.OFFER_ROW);
+        blitButton(graphics, x, y, width, MarketScreenLogic.OFFER_ROW, true, hot);
+        drawStack(graphics, offer.costA(), x + 3, y + 2, mouseX, mouseY);
+        drawStack(graphics, offer.costB(), x + 22, y + 2, mouseX, mouseY);
+        graphics.blitSprite(offer.usesLeft() > 0 ? TRADE_ARROW : TRADE_ARROW_OUT, x + 41, y + 5, 10, 9);
+        drawStack(graphics, offer.result(), x + 54, y + 2, mouseX, mouseY);
         int affordable = logic.affordable(offer, this.minecraft.player.getInventory());
-        graphics.drawString(this.font, "[" + affordable + " / " + offer.usesLeft() + "]", x + 101, y + 10, TEXT, false);
+        graphics.drawString(this.font, "[" + affordable + " / " + offer.usesLeft() + "]", x + 74, y + 6, BUTTON_TEXT, true);
+    }
+
+    private void drawOfferBar(GuiGraphics graphics, int left, int top, int count) {
+        if (!MarketScreenLogic.offerBar(count)) {
+            return;
+        }
+        int x = left + MarketScreenLogic.BAR_X;
+        int y = top + MarketScreenLogic.OFFER_Y;
+        graphics.blitSprite(SCROLLER_BACKGROUND, x, y, MarketScreenLogic.BAR_W, MarketScreenLogic.OFFER_H);
+        graphics.blitSprite(SCROLLER, x, top + logic.offerThumbY(count), MarketScreenLogic.BAR_W, logic.offerThumbH(count));
+    }
+
+    private int shownCount() {
+        return logic.visible(this.menu.offers(), this.minecraft.player.getInventory()).size();
+    }
+
+    private void drawButton(GuiGraphics graphics, int x, int y, int width, int height, Component label, boolean enabled, boolean hovered) {
+        blitButton(graphics, x, y, width, height, enabled, hovered);
+        int textX = x + (width - this.font.width(label)) / 2;
+        graphics.drawString(this.font, label, textX, y + (height - 8) / 2, BUTTON_TEXT, true);
+    }
+
+    private void blitButton(GuiGraphics graphics, int x, int y, int width, int height, boolean enabled, boolean hovered) {
+        ResourceLocation sprite = !enabled ? BUTTON_DISABLED : hovered ? BUTTON_HIGHLIGHTED : BUTTON;
+        graphics.blitSprite(sprite, x, y, width, height);
+    }
+
+    private void drawHeld(GuiGraphics graphics, ItemStack cost, int x, int y, int mouseX, int mouseY, Inventory inventory) {
+        if (cost.isEmpty()) {
+            return;
+        }
+        graphics.blitSprite(SLOT, x, y, MarketScreenLogic.COST_SLOT, MarketScreenLogic.COST_SLOT);
+        int itemX = x + 1;
+        int itemY = y + 1;
+        graphics.renderItem(cost, itemX, itemY);
+        graphics.renderItemDecorations(this.font, cost, itemX, itemY, Integer.toString(logic.held(inventory, cost)));
+        if (inside(mouseX, mouseY, x, y, MarketScreenLogic.COST_SLOT, MarketScreenLogic.COST_SLOT)) {
+            hovered = cost;
+        }
     }
 
     private void drawStack(GuiGraphics graphics, ItemStack stack, int x, int y, int mouseX, int mouseY) {
@@ -108,15 +191,18 @@ public class VillagerMarketScreen extends AbstractContainerScreen<VillagerMarket
         }
     }
 
-    private void drawButton(GuiGraphics graphics, int x, int y, Component label, boolean enabled) {
-        graphics.fill(x, y, x + MarketScreenLogic.BUTTON_W, y + MarketScreenLogic.BUTTON_H, enabled ? SELECTED : 0x66000000);
-        graphics.drawString(this.font, label, x + 4, y + 6, TEXT, false);
+    private static boolean inside(int mouseX, int mouseY, int x, int y, int width, int height) {
+        return mouseX >= x && mouseY >= y && mouseX < x + width && mouseY < y + height;
+    }
+
+    @Override
+    protected void renderLabels(GuiGraphics graphics, int mouseX, int mouseY) {
     }
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         Inventory inventory = this.minecraft.player.getInventory();
-        MarketScreenLogic.Click click = logic.click(mouseX, mouseY, this.leftPos, this.topPos, this.font.lineHeight + 2, this.menu.offers(), inventory);
+        MarketScreenLogic.Click click = logic.click(mouseX, mouseY, this.leftPos, this.topPos, this.menu.offers(), inventory);
         if (click == MarketScreenLogic.Click.ONCE && logic.selected != null) {
             send(1);
         } else if (click == MarketScreenLogic.Click.MAX && logic.selected != null) {
@@ -126,9 +212,21 @@ public class VillagerMarketScreen extends AbstractContainerScreen<VillagerMarket
     }
 
     @Override
+    public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
+        logic.dragBar((int) mouseY - this.topPos, shownCount());
+        return super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
+    }
+
+    @Override
+    public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        logic.releaseBar();
+        return super.mouseReleased(mouseX, mouseY, button);
+    }
+
+    @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
         List<ListedOffer> shown = logic.visible(this.menu.offers(), this.minecraft.player.getInventory());
-        logic.scroll(mouseX, mouseY, this.leftPos, this.topPos, scrollY, this.font.lineHeight + 2, shown.size(), logic.groups(this.menu.offers()).size());
+        logic.scroll(mouseX, mouseY, this.leftPos, this.topPos, scrollY, shown.size(), logic.groups(this.menu.offers()).size());
         return true;
     }
 

@@ -24,4 +24,9 @@ public class FabricMarketGameTests {
     public void adjustedPriceIsWhatIsCharged(GameTestHelper helper) {
         MarketGameTests.adjustedPriceIsWhatIsCharged(helper);
     }
+
+    @GameTest(structure = "minecraft:empty")
+    public void experienceLandsOnThePlayer(GameTestHelper helper) {
+        MarketGameTests.experienceLandsOnThePlayer(helper);
+    }
 }

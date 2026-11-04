@@ -9,11 +9,15 @@ import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.EntityTypes;
+import net.minecraft.world.entity.ExperienceOrb;
 import net.minecraft.world.entity.npc.villager.Villager;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.trading.ItemCost;
+//? if >=26.1
+import net.minecraft.world.level.GameType;
 import net.minecraft.world.item.trading.MerchantOffer;
 import net.minecraft.world.item.trading.MerchantOffers;
 
@@ -29,7 +33,8 @@ public final class MarketGameTests {
             new Case("one_emerald_buys_bread", MarketGameTests::oneEmeraldBuysBread),
             new Case("components_must_match", MarketGameTests::componentsMustMatch),
             new Case("villager_outside_the_box_is_not_traded", MarketGameTests::villagerOutsideTheBoxIsNotTraded),
-            new Case("adjusted_price_is_what_is_charged", MarketGameTests::adjustedPriceIsWhatIsCharged)
+            new Case("adjusted_price_is_what_is_charged", MarketGameTests::adjustedPriceIsWhatIsCharged),
+            new Case("experience_lands_on_the_player", MarketGameTests::experienceLandsOnThePlayer)
     );
 
     private MarketGameTests() {
@@ -93,6 +98,31 @@ public final class MarketGameTests {
         helper.succeed();
     }
 
+    public static void experienceLandsOnThePlayer(GameTestHelper helper) {
+        Villager villager = villager(helper, offer(new ItemCost(Items.EMERALD), new ItemStack(Items.BREAD), 4, 0.0f, 0));
+        ServerPlayer player = player(helper);
+        player.setPos(villager.getX() + 8, villager.getY(), villager.getZ());
+        player.getInventory().add(new ItemStack(Items.EMERALD));
+
+        TradeExecutor.Result result = TradeExecutor.execute(player, villager.blockPosition(), villager.getId(), 0, 1);
+
+        helper.assertTrue(result.performed() == 1, "performed " + result.performed());
+        AABB area = villager.getBoundingBox().minmax(player.getBoundingBox()).inflate(2);
+        boolean onPlayer = false;
+        boolean onVillager = false;
+        for (ExperienceOrb orb : player.level().getEntitiesOfClass(ExperienceOrb.class, area)) {
+            if (orb.distanceToSqr(player) < 4) {
+                onPlayer = true;
+            }
+            if (orb.distanceToSqr(villager) < 4) {
+                onVillager = true;
+            }
+        }
+        helper.assertTrue(onPlayer, "the experience orb was not on the player");
+        helper.assertTrue(!onVillager, "the experience orb stayed on the villager");
+        helper.succeed();
+    }
+
     private static MerchantOffer offer(ItemCost cost, ItemStack result, int maxUses, float multiplier, int demand) {
         return new MerchantOffer(cost, Optional.empty(), result, 0, maxUses, 1, multiplier, demand);
     }
@@ -105,8 +135,12 @@ public final class MarketGameTests {
         return villager;
     }
 
+    @SuppressWarnings("removal")
     private static ServerPlayer player(GameTestHelper helper) {
-        return helper.makeMockServerPlayerInLevel();
+        //? if >=26.1 {
+        return (ServerPlayer) helper.makeMockServerPlayer(GameType.CREATIVE);
+        //?} else
+        //return helper.makeMockServerPlayerInLevel();
     }
 
     private static int count(ServerPlayer player, Item item) {

@@ -8,7 +8,15 @@ After publishing, the action prepares the next development version and archives 
 
 ## Unreleased
 
-- Place a Villager Market (planks around an emerald block) and trade with every villager within 48 blocks, 16 up and 16 down. Offers are grouped by the villager's name, or by profession. Show All lists offers you cannot pay for. x1 buys once, and xN buys as many as you can pay for and the offer still has left.
+- Under the trades, [available / max until lock] explains the two numbers on each offer.
+- Selecting an offer shows its inputs beside the buy buttons, each with how many of that item you are carrying. Those slots cannot be clicked.
+- Buying updates that carried count, and how many times you can still pay.
+- Experience from a purchase appears on you. It no longer drops on the villager.
+- The trade list shows a scrollbar when there are more offers than fit. Drag it, or use the mouse wheel.
+- The Villager Market recipe appears in the recipe book once you have planks or an emerald block.
+- The Villager Market is a barrel. Each side has a villager face standing one pixel out, with the nose one pixel farther, and an emerald in the middle of the top and the bottom.
+- The market window uses the vanilla inventory frame, buttons, and trade arrows.
+- Place a Villager Market (planks around an emerald block) and trade with every villager within 48 blocks, 16 up and 16 down. Offers are grouped by the villager's name, or by profession. Show All lists offers you cannot pay for. Turn it off and the button reads Available, listing only offers you can pay. x1 buys once, and xN buys as many as you can pay for and the offer still has left.
 
 ## 1.0.2
 
