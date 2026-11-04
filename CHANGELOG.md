@@ -8,6 +8,8 @@ After publishing, the action prepares the next development version and archives 
 
 ## Unreleased
 
+## 2.0.0-alpha
+
 - Under the trades, [available / max until lock] explains the two numbers on each offer.
 - Selecting an offer shows its inputs beside the buy buttons, each with how many of that item you are carrying. Those slots cannot be clicked.
 - Buying updates that carried count, and how many times you can still pay.
