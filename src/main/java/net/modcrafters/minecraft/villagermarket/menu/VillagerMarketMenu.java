@@ -9,6 +9,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.Vec3;
 
@@ -16,6 +17,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class VillagerMarketMenu extends AbstractContainerMenu {
+    private static final int MAIN_SLOTS = 36;
     private final BlockPos pos;
     private List<ListedOffer> offers;
 
@@ -23,6 +25,10 @@ public class VillagerMarketMenu extends AbstractContainerMenu {
         super(ModContent.menu(), containerId);
         this.pos = data.pos();
         this.offers = List.copyOf(data.offers());
+        // The screen never draws these. They exist so a purchase is sent to the client inventory.
+        for (int index = 0; index < MAIN_SLOTS; index++) {
+            this.addSlot(new HiddenSlot(inventory, index));
+        }
     }
 
     public static OpeningData opening(ServerLevel level, BlockPos pos) {
@@ -58,5 +64,21 @@ public class VillagerMarketMenu extends AbstractContainerMenu {
     @Override
     public ItemStack quickMoveStack(Player player, int index) {
         return ItemStack.EMPTY;
+    }
+
+    private static final class HiddenSlot extends Slot {
+        private HiddenSlot(Inventory inventory, int index) {
+            super(inventory, index, 0, 0);
+        }
+
+        @Override
+        public boolean isActive() {
+            return false;
+        }
+
+        @Override
+        public boolean mayPickup(Player player) {
+            return false;
+        }
     }
 }

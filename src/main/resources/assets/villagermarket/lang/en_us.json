@@ -3,5 +3,7 @@
   "itemGroup.villagermarket": "Villager Market",
   "gui.villagermarket.all": "[ ALL ]",
   "gui.villagermarket.show_all": "Show All",
-  "gui.villagermarket.once": "x 1"
+  "gui.villagermarket.available": "Available",
+  "gui.villagermarket.once": "x 1",
+  "gui.villagermarket.offer_count": "[available / max until lock]"
 }

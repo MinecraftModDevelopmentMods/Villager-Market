@@ -49,6 +49,7 @@ public final class MarketPayloads {
             return;
         }
         TradeExecutor.execute(player, menu.pos(), trade.villagerId(), trade.offerIndex(), trade.uses());
+        menu.broadcastChanges();
         List<ListedOffer> fresh = VillagerMarketMenu.scan((ServerLevel) player.level(), menu.pos());
         menu.replace(fresh);
         Services.PLATFORM.sendToPlayer(player, new Offers(fresh));

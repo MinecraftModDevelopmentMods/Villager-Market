@@ -11,6 +11,8 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.trading.MerchantOffer;
 import net.minecraft.world.item.trading.MerchantOffers;
 
+import java.util.List;
+
 public final class TradeExecutor {
     private TradeExecutor() {
     }
@@ -51,16 +53,23 @@ public final class TradeExecutor {
             if (!result.isEmpty()) {
                 player.level().addFreshEntity(new ItemEntity(player.level(), player.getX(), player.getY(), player.getZ(), result));
             }
-            villager.notifyTrade(offer);
-            if (offer.shouldRewardExp()) {
-                spawnXp(player, offer.getXp());
-            }
+            rewardAt(villager, player, offer);
         }
         return new Result(performed, false);
     }
 
-    private static void spawnXp(ServerPlayer player, int xp) {
-        player.level().addFreshEntity(new ExperienceOrb(player.level(), player.getX(), player.getY(), player.getZ(), xp));
+    private static void rewardAt(Villager villager, ServerPlayer player, MerchantOffer offer) {
+        List<ExperienceOrb> already = orbsNear(villager);
+        villager.notifyTrade(offer);
+        for (ExperienceOrb orb : orbsNear(villager)) {
+            if (!already.contains(orb)) {
+                orb.setPos(player.getX(), player.getY(), player.getZ());
+            }
+        }
+    }
+
+    private static List<ExperienceOrb> orbsNear(Villager villager) {
+        return villager.level().getEntitiesOfClass(ExperienceOrb.class, villager.getBoundingBox().inflate(1.0));
     }
 
     static int count(ServerPlayer player, ItemStack cost) {
