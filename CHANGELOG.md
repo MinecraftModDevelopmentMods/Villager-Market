@@ -8,6 +8,8 @@ After publishing, the action prepares the next development version and archives 
 
 ## Unreleased
 
+- Simplified Chinese for the block, the creative tab, and the market window.
+
 ## 2.0.0-alpha
 
 - Under the trades, [available / max until lock] explains the two numbers on each offer.

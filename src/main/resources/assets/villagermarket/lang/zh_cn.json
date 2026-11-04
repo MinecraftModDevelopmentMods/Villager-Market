@@ -1,0 +1,9 @@
+{
+  "block.villagermarket.villager_market": "村民市场方块",
+  "itemGroup.villagermarket": "村民市场",
+  "gui.villagermarket.all": "[ 全部 ]",
+  "gui.villagermarket.show_all": "显示全部",
+  "gui.villagermarket.available": "可购买",
+  "gui.villagermarket.once": "x 1",
+  "gui.villagermarket.offer_count": "[可购买 / 锁定前剩余]"
+}
