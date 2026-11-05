@@ -67,7 +67,7 @@ public class VillagerMarketScreen extends AbstractContainerScreen<VillagerMarket
         hovered = ItemStack.EMPTY;
         List<ListedOffer> shown = logic.visible(this.menu.offers(), this.minecraft.player.getInventory());
         logic.fitOffer(shown.size());
-        int offerW = MarketScreenLogic.offerWidth(shown.size());
+        int offerW = logic.offerWidth(shown.size());
         graphics.enableScissor(left + MarketScreenLogic.OFFER_X, top + MarketScreenLogic.OFFER_Y,
                 left + MarketScreenLogic.OFFER_X + offerW, top + MarketScreenLogic.OFFER_Y + MarketScreenLogic.OFFER_H);
         for (int i = logic.offerScroll; i < shown.size(); i++) {
@@ -142,7 +142,7 @@ public class VillagerMarketScreen extends AbstractContainerScreen<VillagerMarket
     }
 
     private void drawOfferBar(GuiGraphics graphics, int left, int top, int count) {
-        if (!MarketScreenLogic.offerBar(count)) {
+        if (!logic.offerBar(count)) {
             return;
         }
         int x = left + MarketScreenLogic.BAR_X;

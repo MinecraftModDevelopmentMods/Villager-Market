@@ -29,4 +29,24 @@ public class FabricMarketGameTests {
     public void experienceLandsOnThePlayer(GameTestHelper helper) {
         MarketGameTests.experienceLandsOnThePlayer(helper);
     }
+
+    @GameTest(structure = "minecraft:empty")
+    public void automatonTradesFromItsSlots(GameTestHelper helper) {
+        MarketGameTests.automatonTradesFromItsSlots(helper);
+    }
+
+    @GameTest(structure = "minecraft:empty")
+    public void automatonRejectsADifferentBook(GameTestHelper helper) {
+        MarketGameTests.automatonRejectsADifferentBook(helper);
+    }
+
+    @GameTest(structure = "minecraft:empty")
+    public void automatonStopsWithoutRedstone(GameTestHelper helper) {
+        MarketGameTests.automatonStopsWithoutRedstone(helper);
+    }
+
+    @GameTest(structure = "minecraft:empty")
+    public void automatonBuysTheCheapestSimilar(GameTestHelper helper) {
+        MarketGameTests.automatonBuysTheCheapestSimilar(helper);
+    }
 }

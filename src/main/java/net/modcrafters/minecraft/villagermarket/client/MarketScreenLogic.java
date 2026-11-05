@@ -39,6 +39,8 @@ public final class MarketScreenLogic {
     public static final int BAR_W = 6;
     public static final int BAR_X = WIDTH - 4 - BAR_W;
 
+    public int listHeight = OFFER_H;
+    public int showY = SHOW_Y;
     public boolean showAll = true;
     public String selectedGroup = "";
     public int groupScroll;
@@ -74,15 +76,15 @@ public final class MarketScreenLogic {
         return ONCE_X - 4 - slots * COST_SLOT + index * COST_SLOT;
     }
 
-    public static int offerRows() {
-        return Math.max(1, OFFER_H / OFFER_ROW);
+    public int offerRows() {
+        return Math.max(1, listHeight / OFFER_ROW);
     }
 
-    public static boolean offerBar(int count) {
+    public boolean offerBar(int count) {
         return count > offerRows();
     }
 
-    public static int offerWidth(int count) {
+    public int offerWidth(int count) {
         return offerBar(count) ? BAR_X - OFFER_X - 2 : OFFER_W;
     }
 
@@ -92,17 +94,17 @@ public final class MarketScreenLogic {
 
     public int offerThumbY(int count) {
         int thumb = offerThumbH(count);
-        int travel = Math.max(1, OFFER_H - thumb);
+        int travel = Math.max(1, listHeight - thumb);
         int max = Math.max(1, count - offerRows());
         return OFFER_Y + offerScroll * travel / max;
     }
 
     public int offerThumbH(int count) {
-        return Math.max(BAR_W * 2, OFFER_H * offerRows() / Math.max(count, 1));
+        return Math.max(BAR_W * 2, listHeight * offerRows() / Math.max(count, 1));
     }
 
     public boolean pressBar(int x, int y, int count) {
-        if (!offerBar(count) || !inside(x, y, BAR_X, OFFER_Y, BAR_W, OFFER_H)) {
+        if (!offerBar(count) || !inside(x, y, BAR_X, OFFER_Y, BAR_W, listHeight)) {
             return false;
         }
         draggingBar = true;
@@ -118,7 +120,7 @@ public final class MarketScreenLogic {
             return;
         }
         int thumb = offerThumbH(count);
-        int travel = Math.max(1, OFFER_H - thumb);
+        int travel = Math.max(1, listHeight - thumb);
         int max = Math.max(1, count - offerRows());
         offerScroll = clamp(y - barGrab - OFFER_Y, travel);
         offerScroll = offerScroll * max / travel;
@@ -156,7 +158,7 @@ public final class MarketScreenLogic {
     public Click click(double mouseX, double mouseY, int left, int top, List<ListedOffer> offers, Inventory inventory) {
         int x = (int) mouseX - left;
         int y = (int) mouseY - top;
-        if (inside(x, y, SHOW_X, SHOW_Y, SHOW_W, SHOW_H)) {
+        if (inside(x, y, SHOW_X, showY, SHOW_W, SHOW_H)) {
             showAll = !showAll;
             return Click.TOGGLE;
         }
@@ -168,7 +170,21 @@ public final class MarketScreenLogic {
                 return Click.MAX;
             }
         }
-        if (inside(x, y, GROUP_X, GROUP_Y, GROUP_W, GROUP_H)) {
+        return browseAt(x, y, offers, inventory);
+    }
+
+    public Click browse(double mouseX, double mouseY, int left, int top, List<ListedOffer> offers, Inventory inventory) {
+        int x = (int) mouseX - left;
+        int y = (int) mouseY - top;
+        if (inside(x, y, SHOW_X, showY, SHOW_W, SHOW_H)) {
+            showAll = !showAll;
+            return Click.TOGGLE;
+        }
+        return browseAt(x, y, offers, inventory);
+    }
+
+    private Click browseAt(int x, int y, List<ListedOffer> offers, Inventory inventory) {
+        if (inside(x, y, GROUP_X, GROUP_Y, GROUP_W, listHeight)) {
             int index = groupScroll + (y - GROUP_Y) / GROUP_ROW;
             List<String> groups = groups(offers);
             if (index == 0) {
@@ -183,7 +199,7 @@ public final class MarketScreenLogic {
         if (pressBar(x, y, shown.size())) {
             return Click.BAR;
         }
-        if (inside(x, y, OFFER_X, OFFER_Y, offerWidth(shown.size()), OFFER_H)) {
+        if (inside(x, y, OFFER_X, OFFER_Y, offerWidth(shown.size()), listHeight)) {
             int index = offerScroll + (y - OFFER_Y) / OFFER_ROW;
             selected = index >= 0 && index < shown.size() ? shown.get(index) : null;
             return Click.OFFER;
@@ -195,10 +211,10 @@ public final class MarketScreenLogic {
         int x = (int) mouseX - left;
         int y = (int) mouseY - top;
         int step = delta > 0 ? -1 : 1;
-        if (inside(x, y, GROUP_X, GROUP_Y, GROUP_W, GROUP_H)) {
-            int visible = Math.max(1, GROUP_H / GROUP_ROW);
+        if (inside(x, y, GROUP_X, GROUP_Y, GROUP_W, listHeight)) {
+            int visible = Math.max(1, listHeight / GROUP_ROW);
             groupScroll = clamp(groupScroll + step, groupCount + 1 - visible);
-        } else if (inside(x, y, OFFER_X, OFFER_Y, BAR_X + BAR_W - OFFER_X, OFFER_H)) {
+        } else if (inside(x, y, OFFER_X, OFFER_Y, BAR_X + BAR_W - OFFER_X, listHeight)) {
             offerScroll = clamp(offerScroll + step, offerCount - offerRows());
         }
     }

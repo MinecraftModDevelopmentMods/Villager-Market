@@ -1,9 +1,17 @@
 {
   "block.villagermarket.villager_market": "Villager Market",
+  "block.villagermarket.market_automaton": "Market Automaton",
   "itemGroup.villagermarket": "Villager Market",
   "gui.villagermarket.all": "[ ALL ]",
   "gui.villagermarket.show_all": "Show All",
   "gui.villagermarket.available": "Available",
   "gui.villagermarket.once": "x 1",
-  "gui.villagermarket.offer_count": "[available / max until lock]"
+  "gui.villagermarket.offer_count": "[available / max until lock]",
+  "gui.villagermarket.max_uses": "[max: %s]",
+  "gui.villagermarket.locked": "[locked]",
+  "gui.villagermarket.redstone.ignored": "Ignores redstone",
+  "gui.villagermarket.redstone.powered": "Runs when powered",
+  "gui.villagermarket.redstone.unpowered": "Runs when unpowered",
+  "gui.villagermarket.similar.on": "Includes similar offers and buys the cheapest you can pay",
+  "gui.villagermarket.similar.off": "Only the selected offer"
 }
