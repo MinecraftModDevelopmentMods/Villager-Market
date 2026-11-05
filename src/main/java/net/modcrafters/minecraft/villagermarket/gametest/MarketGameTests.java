@@ -22,14 +22,17 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.trading.ItemCost;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 //? if >=26.1
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.item.trading.MerchantOffer;
 import net.minecraft.world.item.trading.MerchantOffers;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Consumer;
 
 public final class MarketGameTests {
@@ -58,7 +61,7 @@ public final class MarketGameTests {
 
         TradeExecutor.Result result = TradeExecutor.execute(player, villager.blockPosition(), villager.getId(), 0, 1);
 
-        helper.assertTrue(result.performed() == 1, "performed " + result.performed());
+        helper.assertTrue(result.performed() == 1, "performed " + result.performed() + " outOfRange " + result.outOfRange());
         helper.assertTrue(count(player, Items.BREAD) == 1, "bread " + count(player, Items.BREAD));
         helper.assertTrue(count(player, Items.EMERALD) == 0, "emeralds left " + count(player, Items.EMERALD));
         helper.succeed();
@@ -114,23 +117,13 @@ public final class MarketGameTests {
         ServerPlayer player = player(helper);
         player.setPos(villager.getX() + 8, villager.getY(), villager.getZ());
         player.getInventory().add(new ItemStack(Items.EMERALD));
+        AABB area = villager.getBoundingBox().minmax(player.getBoundingBox()).inflate(2);
+        Set<Integer> before = orbIds(helper.getLevel(), area);
 
         TradeExecutor.Result result = TradeExecutor.execute(player, villager.blockPosition(), villager.getId(), 0, 1);
 
         helper.assertTrue(result.performed() == 1, "performed " + result.performed());
-        AABB area = villager.getBoundingBox().minmax(player.getBoundingBox()).inflate(2);
-        boolean onPlayer = false;
-        boolean onVillager = false;
-        for (ExperienceOrb orb : player.level().getEntitiesOfClass(ExperienceOrb.class, area)) {
-            if (orb.distanceToSqr(player) < 4) {
-                onPlayer = true;
-            }
-            if (orb.distanceToSqr(villager) < 4) {
-                onVillager = true;
-            }
-        }
-        helper.assertTrue(onPlayer, "the experience orb was not on the player");
-        helper.assertTrue(!onVillager, "the experience orb stayed on the villager");
+        assertRewardMoved(helper, area, before, player.position(), villager.position(), "player");
         helper.succeed();
     }
 
@@ -144,24 +137,14 @@ public final class MarketGameTests {
         machine.arm(deal.getCostA(), ItemStack.EMPTY, deal.getResult());
         machine.setItem(MachineSlots.INPUT_A, new ItemStack(Items.DIAMOND, 3));
         BlockPos absolute = helper.absolutePos(at);
+        AABB area = new AABB(absolute).inflate(8);
+        Set<Integer> before = orbIds(helper.getLevel(), area);
         tick(helper, machine, absolute);
         helper.assertTrue(machine.getItem(MachineSlots.OUTPUT).is(Items.BREAD) && machine.getItem(MachineSlots.OUTPUT).getCount() == 1, "first bread");
         helper.assertTrue(machine.getItem(MachineSlots.INPUT_A).getCount() == 2, "diamonds after one trade");
         helper.assertTrue(!machine.canTakeItemThroughFace(MachineSlots.INPUT_A, machine.getItem(MachineSlots.INPUT_A), Direction.NORTH), "a side hopper pulled the payment");
         helper.assertTrue(machine.canTakeItemThroughFace(MachineSlots.OUTPUT, machine.getItem(MachineSlots.OUTPUT), Direction.DOWN), "the bottom could not take the result");
-        AABB area = new AABB(absolute).inflate(8);
-        boolean onBlock = false;
-        boolean onVillager = false;
-        for (ExperienceOrb orb : helper.getLevel().getEntitiesOfClass(ExperienceOrb.class, area)) {
-            if (orb.distanceToSqr(Vec3.atCenterOf(absolute)) < 4) {
-                onBlock = true;
-            }
-            if (orb.distanceToSqr(villager) < 4) {
-                onVillager = true;
-            }
-        }
-        helper.assertTrue(onBlock, "the experience orb was not on the automaton");
-        helper.assertTrue(!onVillager, "the experience orb stayed on the villager");
+        assertRewardMoved(helper, area, before, Vec3.atCenterOf(absolute), villager.position(), "automaton");
         tick(helper, machine, absolute);
         helper.assertTrue(machine.getItem(MachineSlots.OUTPUT).getCount() == 2, "second bread");
         helper.assertTrue(machine.getItem(MachineSlots.INPUT_A).getCount() == 1, "the locked trade kept spending");
@@ -230,6 +213,32 @@ public final class MarketGameTests {
         helper.assertTrue(pricey.getOffers().get(0).getUses() == 0, "bought the expensive offer");
         helper.assertTrue(machine.getItem(MachineSlots.INPUT_A).getCount() == priceyCount - cheapCount, "did not pay the cheaper price");
         helper.succeed();
+    }
+
+    private static Set<Integer> orbIds(Level level, AABB area) {
+        Set<Integer> ids = new HashSet<>();
+        for (ExperienceOrb orb : level.getEntitiesOfClass(ExperienceOrb.class, area)) {
+            ids.add(orb.getId());
+        }
+        return ids;
+    }
+
+    private static void assertRewardMoved(GameTestHelper helper, AABB area, Set<Integer> before, Vec3 destination, Vec3 origin, String where) {
+        boolean arrived = false;
+        boolean stayed = false;
+        for (ExperienceOrb orb : helper.getLevel().getEntitiesOfClass(ExperienceOrb.class, area)) {
+            if (before.contains(orb.getId())) {
+                continue;
+            }
+            if (orb.distanceToSqr(destination) < 4.0) {
+                arrived = true;
+            }
+            if (orb.distanceToSqr(origin) < 4.0) {
+                stayed = true;
+            }
+        }
+        helper.assertTrue(arrived, "the experience orb was not on the " + where);
+        helper.assertTrue(!stayed, "the experience orb stayed on the villager");
     }
 
     private static MarketAutomatonBlockEntity machine(GameTestHelper helper, BlockPos at) {
