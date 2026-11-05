@@ -1,9 +1,17 @@
 {
   "block.villagermarket.villager_market": "村民市场方块",
+  "block.villagermarket.market_automaton": "市场自动机方块",
   "itemGroup.villagermarket": "村民市场",
   "gui.villagermarket.all": "[ 全部 ]",
   "gui.villagermarket.show_all": "显示全部",
   "gui.villagermarket.available": "可购买",
   "gui.villagermarket.once": "x 1",
-  "gui.villagermarket.offer_count": "[可购买 / 锁定前剩余]"
+  "gui.villagermarket.offer_count": "[可购买 / 锁定前剩余]",
+  "gui.villagermarket.max_uses": "[上限: %s]",
+  "gui.villagermarket.locked": "[已锁定]",
+  "gui.villagermarket.redstone.ignored": "忽略红石",
+  "gui.villagermarket.redstone.powered": "充能时运行",
+  "gui.villagermarket.redstone.unpowered": "未充能时运行",
+  "gui.villagermarket.similar.on": "包含相似交易，并购买当前能支付的最便宜的一项",
+  "gui.villagermarket.similar.off": "仅限所选交易"
 }
