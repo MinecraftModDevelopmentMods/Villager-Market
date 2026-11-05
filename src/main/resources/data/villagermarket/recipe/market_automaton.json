@@ -1,0 +1,13 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": ["m", "h"],
+  "key": {
+    "m": "villagermarket:villager_market",
+    "h": "minecraft:hopper"
+  },
+  "result": {
+    "id": "villagermarket:market_automaton",
+    "count": 1
+  }
+}

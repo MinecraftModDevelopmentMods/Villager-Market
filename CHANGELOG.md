@@ -8,6 +8,11 @@ After publishing, the action prepares the next development version and archives 
 
 ## Unreleased
 
+- A Market Automaton trades on its own, at the same speed as a hopper. Choose an offer, put the payment in the two slots or let a hopper fill them, and take the result from the bottom. The choice stays when the trade locks, and you can take the payment back out of the window.
+- The furnace arrow sits between the payment and the result. A button on the right side of the window chooses whether the block ignores redstone, runs only while powered, or runs only while unpowered.
+- Each automaton offer shows `[max: uses left]`, or `[locked]` once none remain. That label updates while the window stays open.
+- Similar is the icon beside the redstone button. It also buys other villagers' copies of the selected trade and picks the cheapest one the slots can pay.
+
 ## 2.0.0-alpha
 
 - Under the trades, [available / max until lock] explains the two numbers on each offer.

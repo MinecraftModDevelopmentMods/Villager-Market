@@ -1,9 +1,14 @@
 package net.modcrafters.minecraft.villagermarket.gametest;
 
+import net.modcrafters.minecraft.villagermarket.ModContent;
+import net.modcrafters.minecraft.villagermarket.block.entity.MarketAutomatonBlockEntity;
+import net.modcrafters.minecraft.villagermarket.block.entity.RedstoneMode;
+import net.modcrafters.minecraft.villagermarket.menu.MachineSlots;
 import net.modcrafters.minecraft.villagermarket.search.MarketSearch;
 import net.modcrafters.minecraft.villagermarket.trade.MainSlots;
 import net.modcrafters.minecraft.villagermarket.trade.TradeExecutor;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.network.chat.Component;
@@ -12,10 +17,12 @@ import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.ExperienceOrb;
 import net.minecraft.world.entity.npc.villager.Villager;
 import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.trading.ItemCost;
+import net.minecraft.world.level.block.Blocks;
 //? if >=26.1
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.item.trading.MerchantOffer;
@@ -34,7 +41,11 @@ public final class MarketGameTests {
             new Case("components_must_match", MarketGameTests::componentsMustMatch),
             new Case("villager_outside_the_box_is_not_traded", MarketGameTests::villagerOutsideTheBoxIsNotTraded),
             new Case("adjusted_price_is_what_is_charged", MarketGameTests::adjustedPriceIsWhatIsCharged),
-            new Case("experience_lands_on_the_player", MarketGameTests::experienceLandsOnThePlayer)
+            new Case("experience_lands_on_the_player", MarketGameTests::experienceLandsOnThePlayer),
+            new Case("automaton_trades_from_its_slots", MarketGameTests::automatonTradesFromItsSlots),
+            new Case("automaton_rejects_a_different_book", MarketGameTests::automatonRejectsADifferentBook),
+            new Case("automaton_stops_without_redstone", MarketGameTests::automatonStopsWithoutRedstone),
+            new Case("automaton_buys_the_cheapest_similar", MarketGameTests::automatonBuysTheCheapestSimilar)
     );
 
     private MarketGameTests() {
@@ -121,6 +132,117 @@ public final class MarketGameTests {
         helper.assertTrue(onPlayer, "the experience orb was not on the player");
         helper.assertTrue(!onVillager, "the experience orb stayed on the villager");
         helper.succeed();
+    }
+
+    public static void automatonTradesFromItsSlots(GameTestHelper helper) {
+        BlockPos at = new BlockPos(6, 1, 1);
+        helper.setBlock(at, ModContent.automatonBlock());
+        // The game tests share one world, and the search box is 48 blocks, so this trade is diamonds rather than emeralds.
+        Villager villager = villager(helper, offer(new ItemCost(Items.DIAMOND), new ItemStack(Items.BREAD), 2, 0.0f, 0));
+        MarketAutomatonBlockEntity machine = machine(helper, at);
+        MerchantOffer deal = villager.getOffers().get(0);
+        machine.arm(deal.getCostA(), ItemStack.EMPTY, deal.getResult());
+        machine.setItem(MachineSlots.INPUT_A, new ItemStack(Items.DIAMOND, 3));
+        BlockPos absolute = helper.absolutePos(at);
+        tick(helper, machine, absolute);
+        helper.assertTrue(machine.getItem(MachineSlots.OUTPUT).is(Items.BREAD) && machine.getItem(MachineSlots.OUTPUT).getCount() == 1, "first bread");
+        helper.assertTrue(machine.getItem(MachineSlots.INPUT_A).getCount() == 2, "diamonds after one trade");
+        helper.assertTrue(!machine.canTakeItemThroughFace(MachineSlots.INPUT_A, machine.getItem(MachineSlots.INPUT_A), Direction.NORTH), "a side hopper pulled the payment");
+        helper.assertTrue(machine.canTakeItemThroughFace(MachineSlots.OUTPUT, machine.getItem(MachineSlots.OUTPUT), Direction.DOWN), "the bottom could not take the result");
+        AABB area = new AABB(absolute).inflate(8);
+        boolean onBlock = false;
+        boolean onVillager = false;
+        for (ExperienceOrb orb : helper.getLevel().getEntitiesOfClass(ExperienceOrb.class, area)) {
+            if (orb.distanceToSqr(Vec3.atCenterOf(absolute)) < 4) {
+                onBlock = true;
+            }
+            if (orb.distanceToSqr(villager) < 4) {
+                onVillager = true;
+            }
+        }
+        helper.assertTrue(onBlock, "the experience orb was not on the automaton");
+        helper.assertTrue(!onVillager, "the experience orb stayed on the villager");
+        tick(helper, machine, absolute);
+        helper.assertTrue(machine.getItem(MachineSlots.OUTPUT).getCount() == 2, "second bread");
+        helper.assertTrue(machine.getItem(MachineSlots.INPUT_A).getCount() == 1, "the locked trade kept spending");
+        tick(helper, machine, absolute);
+        helper.assertTrue(machine.getItem(MachineSlots.OUTPUT).getCount() == 2, "a locked trade produced more bread");
+        helper.assertTrue(machine.getItem(MachineSlots.INPUT_A).getCount() == 1, "a locked trade took the last diamond");
+        helper.succeed();
+    }
+
+    public static void automatonRejectsADifferentBook(GameTestHelper helper) {
+        BlockPos at = new BlockPos(6, 1, 1);
+        helper.setBlock(at, ModContent.automatonBlock());
+        ItemCost named = new ItemCost(Items.BOOK).withComponents(builder -> builder.expect(DataComponents.CUSTOM_NAME, Component.literal("ledger")));
+        MerchantOffer deal = new MerchantOffer(new ItemCost(Items.EMERALD), Optional.of(named), new ItemStack(Items.BREAD), 0, 4, 1, 0.0f, 0);
+        villager(helper, deal);
+        MarketAutomatonBlockEntity machine = machine(helper, at);
+        machine.arm(deal.getCostA(), deal.getCostB(), deal.getResult());
+        machine.setItem(MachineSlots.INPUT_A, new ItemStack(Items.EMERALD));
+        machine.setItem(MachineSlots.INPUT_B, new ItemStack(Items.BOOK));
+        tick(helper, machine, helper.absolutePos(at));
+        helper.assertTrue(machine.getItem(MachineSlots.OUTPUT).isEmpty(), "a plain book paid for a named book");
+        helper.assertTrue(machine.getItem(MachineSlots.INPUT_B).is(Items.BOOK), "the plain book was taken");
+        helper.succeed();
+    }
+
+    public static void automatonStopsWithoutRedstone(GameTestHelper helper) {
+        BlockPos at = new BlockPos(6, 1, 1);
+        helper.setBlock(at, ModContent.automatonBlock());
+        Villager villager = villager(helper, offer(new ItemCost(Items.AMETHYST_SHARD), new ItemStack(Items.BREAD), 4, 0.0f, 0));
+        MarketAutomatonBlockEntity machine = machine(helper, at);
+        MerchantOffer deal = villager.getOffers().get(0);
+        machine.arm(deal.getCostA(), ItemStack.EMPTY, deal.getResult());
+        machine.setItem(MachineSlots.INPUT_A, new ItemStack(Items.AMETHYST_SHARD, 2));
+        machine.cycleRedstone();
+        BlockPos absolute = helper.absolutePos(at);
+        tick(helper, machine, absolute);
+        helper.assertTrue(machine.redstone() == RedstoneMode.POWERED, "mode did not move to powered");
+        helper.assertTrue(machine.getItem(MachineSlots.OUTPUT).isEmpty(), "traded with no redstone signal");
+        helper.setBlock(at.east(), Blocks.REDSTONE_BLOCK);
+        tick(helper, machine, absolute);
+        helper.assertTrue(machine.getItem(MachineSlots.OUTPUT).is(Items.BREAD), "did not trade while powered");
+        machine.cycleRedstone();
+        machine.setItem(MachineSlots.OUTPUT, ItemStack.EMPTY);
+        tick(helper, machine, absolute);
+        helper.assertTrue(machine.redstone() == RedstoneMode.UNPOWERED, "mode did not move to unpowered");
+        helper.assertTrue(machine.getItem(MachineSlots.OUTPUT).isEmpty(), "traded while a signal blocked the unpowered mode");
+        helper.succeed();
+    }
+
+    public static void automatonBuysTheCheapestSimilar(GameTestHelper helper) {
+        BlockPos at = new BlockPos(6, 1, 1);
+        helper.setBlock(at, ModContent.automatonBlock());
+        MerchantOffer cheapDeal = offer(new ItemCost(Items.ECHO_SHARD), new ItemStack(Items.BREAD), 4, 0.0f, 0);
+        MerchantOffer priceyDeal = offer(new ItemCost(Items.ECHO_SHARD), new ItemStack(Items.BREAD), 4, 0.2f, 100);
+        int cheapCount = cheapDeal.getCostA().getCount();
+        int priceyCount = priceyDeal.getCostA().getCount();
+        helper.assertTrue(priceyCount > cheapCount, "the expensive offer was not more expensive");
+        Villager cheap = villager(helper, cheapDeal);
+        Villager pricey = villager(helper, priceyDeal);
+        MarketAutomatonBlockEntity machine = machine(helper, at);
+        machine.arm(priceyDeal.getCostA(), ItemStack.EMPTY, priceyDeal.getResult());
+        machine.setSimilar(true);
+        machine.setItem(MachineSlots.INPUT_A, new ItemStack(Items.ECHO_SHARD, priceyCount));
+        tick(helper, machine, helper.absolutePos(at));
+        helper.assertTrue(cheap.getOffers().get(0).getUses() == 1, "did not buy the cheaper offer");
+        helper.assertTrue(pricey.getOffers().get(0).getUses() == 0, "bought the expensive offer");
+        helper.assertTrue(machine.getItem(MachineSlots.INPUT_A).getCount() == priceyCount - cheapCount, "did not pay the cheaper price");
+        helper.succeed();
+    }
+
+    private static MarketAutomatonBlockEntity machine(GameTestHelper helper, BlockPos at) {
+        //? if >=26.1 {
+        return helper.getBlockEntity(at, MarketAutomatonBlockEntity.class);
+        //?} else
+        //return (MarketAutomatonBlockEntity) helper.getBlockEntity(at);
+    }
+
+    private static void tick(GameTestHelper helper, MarketAutomatonBlockEntity machine, BlockPos absolute) {
+        for (int i = 0; i < MachineSlots.COOLDOWN; i++) {
+            MarketAutomatonBlockEntity.serverTick(helper.getLevel(), absolute, machine.getBlockState(), machine);
+        }
     }
 
     private static MerchantOffer offer(ItemCost cost, ItemStack result, int maxUses, float multiplier, int demand) {

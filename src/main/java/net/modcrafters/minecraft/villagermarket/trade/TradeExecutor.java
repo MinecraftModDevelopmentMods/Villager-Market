@@ -10,6 +10,7 @@ import net.minecraft.world.entity.npc.villager.Villager;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.trading.MerchantOffer;
 import net.minecraft.world.item.trading.MerchantOffers;
+import net.minecraft.world.phys.Vec3;
 
 import java.util.List;
 
@@ -53,17 +54,17 @@ public final class TradeExecutor {
             if (!result.isEmpty()) {
                 player.level().addFreshEntity(new ItemEntity(player.level(), player.getX(), player.getY(), player.getZ(), result));
             }
-            rewardAt(villager, player, offer);
+            reward(villager, offer, player.position());
         }
         return new Result(performed, false);
     }
 
-    private static void rewardAt(Villager villager, ServerPlayer player, MerchantOffer offer) {
+    public static void reward(Villager villager, MerchantOffer offer, Vec3 destination) {
         List<ExperienceOrb> already = orbsNear(villager);
         villager.notifyTrade(offer);
         for (ExperienceOrb orb : orbsNear(villager)) {
             if (!already.contains(orb)) {
-                orb.setPos(player.getX(), player.getY(), player.getZ());
+                orb.setPos(destination.x, destination.y, destination.z);
             }
         }
     }

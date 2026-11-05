@@ -1,0 +1,5 @@
+{
+  "variants": {
+    "": { "model": "villagermarket:block/market_automaton" }
+  }
+}

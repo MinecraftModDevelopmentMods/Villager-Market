@@ -1,4 +1,4 @@
 {
   "replace": false,
-  "values": ["villagermarket:villager_market"]
+  "values": ["villagermarket:villager_market", "villagermarket:market_automaton"]
 }
