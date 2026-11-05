@@ -8,6 +8,8 @@ After publishing, the action prepares the next development version and archives 
 
 ## Unreleased
 
+## 2.0.1
+
 - The villager faces sit in the barrel instead of sticking out. The market opening is an oval. The automaton opening is an oval over a square cut, and its bottom stays solid. The nose is narrower.
 - Simplified Chinese covers the Market Automaton and its window.
 - The mod description mentions the Market Automaton as well as the market block.
