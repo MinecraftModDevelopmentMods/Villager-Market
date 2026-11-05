@@ -8,6 +8,9 @@ After publishing, the action prepares the next development version and archives 
 
 ## Unreleased
 
+- The villager faces sit in the barrel instead of sticking out. The market opening is an oval. The automaton opening is an oval over a square cut, and its bottom stays solid. The nose is narrower.
+- Simplified Chinese covers the Market Automaton and its window.
+- The mod description mentions the Market Automaton as well as the market block.
 - A Market Automaton trades on its own, at the same speed as a hopper. Choose an offer, put the payment in the two slots or let a hopper fill them, and take the result from the bottom. The choice stays when the trade locks, and you can take the payment back out of the window.
 - The furnace arrow sits between the payment and the result. A button on the right side of the window chooses whether the block ignores redstone, runs only while powered, or runs only while unpowered.
 - Each automaton offer shows `[max: uses left]`, or `[locked]` once none remain. That label updates while the window stays open.

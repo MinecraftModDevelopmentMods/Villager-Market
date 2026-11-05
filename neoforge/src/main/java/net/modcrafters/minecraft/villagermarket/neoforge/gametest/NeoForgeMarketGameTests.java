@@ -51,7 +51,7 @@ public final class NeoForgeMarketGameTests {
         for (MarketGameTests.Case test : MarketGameTests.CASES) {
             event.registerTest(id(test.name()), new FunctionGameTestInstance(
                     ResourceKey.create(Registries.TEST_FUNCTION, id(test.name())),
-                    new TestData<>(environment, Identifier.withDefaultNamespace("empty"), 100, 0, true)
+                    new TestData<>(environment, id("wide"), 100, 0, true)
             ));
         }
     }
