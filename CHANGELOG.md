@@ -12,6 +12,7 @@ After publishing, the action prepares the next development version and archives 
 - The furnace arrow sits between the payment and the result. A button on the right side of the window chooses whether the block ignores redstone, runs only while powered, or runs only while unpowered.
 - Each automaton offer shows `[max: uses left]`, or `[locked]` once none remain. That label updates while the window stays open.
 - Similar is the icon beside the redstone button. It also buys other villagers' copies of the selected trade and picks the cheapest one the slots can pay.
+- Simplified Chinese for the block, the creative tab, and the market window.
 
 ## 2.0.0-alpha
 
