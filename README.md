@@ -2,7 +2,9 @@
 
 Trade with nearby villagers from one block, or let a Market Automaton trade for you.
 
-The Villager Market looks for villagers within 48 blocks, and 16 blocks up or down. Their offers are grouped by a custom name when they have one, and by profession otherwise. Show All, on by default, lists offers you cannot pay for yet. x1 buys the selected offer once. xN buys as many as you can pay for and the offer still has left. The window closes when you walk more than 8 blocks away.
+The Villager Market follows the village around the block. A villager counts while their bed, bell, or job site sits in that village, wherever they are standing. Offers are grouped by a custom name when they have one, and by profession otherwise. Show All, on by default, lists offers you cannot pay for yet. x1 buys the selected offer once. xN buys as many as you can pay for and the offer still has left. The window closes when you walk more than 8 blocks away.
+
+The Market Automaton trades on its own. Choose an offer, and hoppers can fill the payment and take the result from the bottom. Put it directly under a job site and it trades only with the villager who claimed that block.
 
 ## Jars
 
