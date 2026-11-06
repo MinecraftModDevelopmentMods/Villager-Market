@@ -4,10 +4,11 @@ import net.modcrafters.minecraft.villagermarket.ModContent;
 import net.modcrafters.minecraft.villagermarket.block.entity.MarketAutomatonBlockEntity;
 import net.modcrafters.minecraft.villagermarket.block.entity.RedstoneMode;
 import net.modcrafters.minecraft.villagermarket.menu.MachineSlots;
-import net.modcrafters.minecraft.villagermarket.search.MarketSearch;
 import net.modcrafters.minecraft.villagermarket.trade.MainSlots;
 import net.modcrafters.minecraft.villagermarket.trade.TradeExecutor;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.GlobalPos;
+import net.minecraft.world.entity.ai.memory.MemoryModuleType;
 import net.minecraft.core.Direction;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.gametest.framework.GameTestHelper;
@@ -42,13 +43,16 @@ public final class MarketGameTests {
     public static final List<Case> CASES = List.of(
             new Case("one_emerald_buys_bread", MarketGameTests::oneEmeraldBuysBread),
             new Case("components_must_match", MarketGameTests::componentsMustMatch),
-            new Case("villager_outside_the_box_is_not_traded", MarketGameTests::villagerOutsideTheBoxIsNotTraded),
+            new Case("villager_outside_the_village_is_not_traded", MarketGameTests::villagerOutsideTheVillageIsNotTraded),
+            new Case("distant_villager_with_a_village_job_is_traded", MarketGameTests::distantVillagerWithAVillageJobIsTraded),
             new Case("adjusted_price_is_what_is_charged", MarketGameTests::adjustedPriceIsWhatIsCharged),
             new Case("experience_lands_on_the_player", MarketGameTests::experienceLandsOnThePlayer),
             new Case("automaton_trades_from_its_slots", MarketGameTests::automatonTradesFromItsSlots),
             new Case("automaton_rejects_a_different_book", MarketGameTests::automatonRejectsADifferentBook),
             new Case("automaton_stops_without_redstone", MarketGameTests::automatonStopsWithoutRedstone),
-            new Case("automaton_buys_the_cheapest_similar", MarketGameTests::automatonBuysTheCheapestSimilar)
+            new Case("automaton_buys_the_cheapest_similar", MarketGameTests::automatonBuysTheCheapestSimilar),
+            new Case("automaton_under_a_job_site_trades_with_its_owner", MarketGameTests::automatonUnderAJobSiteTradesWithItsOwner),
+            new Case("unclaimed_job_site_does_not_trade", MarketGameTests::unclaimedJobSiteDoesNotTrade)
     );
 
     private MarketGameTests() {
@@ -80,17 +84,30 @@ public final class MarketGameTests {
         helper.succeed();
     }
 
-    public static void villagerOutsideTheBoxIsNotTraded(GameTestHelper helper) {
+    public static void villagerOutsideTheVillageIsNotTraded(GameTestHelper helper) {
+        Villager villager = villager(helper, offer(new ItemCost(Items.EMERALD), new ItemStack(Items.BREAD), 4, 0.0f, 0));
+        claim(helper, villager, 65, 1, 1);
+        ServerPlayer player = player(helper);
+        player.getInventory().add(new ItemStack(Items.EMERALD));
+
+        TradeExecutor.Result result = TradeExecutor.execute(player, villager.blockPosition(), villager.getId(), 0, 1);
+
+        helper.assertTrue(result.outOfRange(), "a villager from another hall was traded");
+        helper.assertTrue(count(player, Items.EMERALD) == 1, "payment was taken");
+        helper.succeed();
+    }
+
+    public static void distantVillagerWithAVillageJobIsTraded(GameTestHelper helper) {
         Villager villager = villager(helper, offer(new ItemCost(Items.EMERALD), new ItemStack(Items.BREAD), 4, 0.0f, 0));
         BlockPos market = villager.blockPosition();
-        villager.setPos(villager.getX() + MarketSearch.RADIUS + 5, villager.getY(), villager.getZ());
+        villager.setPos(villager.getX() + 80, villager.getY(), villager.getZ());
         ServerPlayer player = player(helper);
         player.getInventory().add(new ItemStack(Items.EMERALD));
 
         TradeExecutor.Result result = TradeExecutor.execute(player, market, villager.getId(), 0, 1);
 
-        helper.assertTrue(result.outOfRange(), "a villager past the box was traded");
-        helper.assertTrue(count(player, Items.EMERALD) == 1, "payment was taken");
+        helper.assertTrue(result.performed() == 1, "a villager tied to the village was skipped");
+        helper.assertTrue(count(player, Items.BREAD) == 1, "bread " + count(player, Items.BREAD));
         helper.succeed();
     }
 
@@ -130,7 +147,7 @@ public final class MarketGameTests {
     public static void automatonTradesFromItsSlots(GameTestHelper helper) {
         BlockPos at = new BlockPos(6, 1, 1);
         helper.setBlock(at, ModContent.automatonBlock());
-        // The game tests share one world, and the search box is 48 blocks, so this trade is diamonds rather than emeralds.
+        // The game tests share one world, so this trade is diamonds rather than emeralds.
         Villager villager = villager(helper, offer(new ItemCost(Items.DIAMOND), new ItemStack(Items.BREAD), 2, 0.0f, 0));
         MarketAutomatonBlockEntity machine = machine(helper, at);
         MerchantOffer deal = villager.getOffers().get(0);
@@ -215,6 +232,43 @@ public final class MarketGameTests {
         helper.succeed();
     }
 
+    public static void automatonUnderAJobSiteTradesWithItsOwner(GameTestHelper helper) {
+        BlockPos at = new BlockPos(6, 1, 1);
+        helper.setBlock(at, ModContent.automatonBlock());
+        MerchantOffer ownerDeal = offer(new ItemCost(Items.PRISMARINE_CRYSTALS), new ItemStack(Items.BREAD), 4, 0.2f, 100);
+        MerchantOffer neighborDeal = offer(new ItemCost(Items.PRISMARINE_CRYSTALS), new ItemStack(Items.BREAD), 4, 0.0f, 0);
+        int ownerCount = ownerDeal.getCostA().getCount();
+        int neighborCount = neighborDeal.getCostA().getCount();
+        helper.assertTrue(ownerCount > neighborCount, "the owner's offer was not more expensive");
+        Villager owner = villagerAt(helper, ownerDeal, 2, 2, 1);
+        claim(helper, owner, 6, 2, 1);
+        Villager neighbor = villagerAt(helper, neighborDeal, 3, 2, 1);
+        MarketAutomatonBlockEntity machine = machine(helper, at);
+        machine.arm(ownerDeal.getCostA(), ItemStack.EMPTY, ownerDeal.getResult());
+        machine.setSimilar(true);
+        machine.setItem(MachineSlots.INPUT_A, new ItemStack(Items.PRISMARINE_CRYSTALS, ownerCount));
+        tick(helper, machine, helper.absolutePos(at));
+        helper.assertTrue(owner.getOffers().get(0).getUses() == 1, "did not buy from the workstation's owner");
+        helper.assertTrue(neighbor.getOffers().get(0).getUses() == 0, "bought from another villager in the village");
+        helper.assertTrue(machine.getItem(MachineSlots.INPUT_A).isEmpty(), "did not pay the owner's price");
+        helper.succeed();
+    }
+
+    public static void unclaimedJobSiteDoesNotTrade(GameTestHelper helper) {
+        BlockPos at = new BlockPos(6, 1, 1);
+        helper.setBlock(at, ModContent.automatonBlock());
+        helper.setBlock(new BlockPos(6, 2, 1), Blocks.LECTERN);
+        Villager villager = villager(helper, offer(new ItemCost(Items.RABBIT_FOOT), new ItemStack(Items.BREAD), 4, 0.0f, 0));
+        MarketAutomatonBlockEntity machine = machine(helper, at);
+        MerchantOffer deal = villager.getOffers().get(0);
+        machine.arm(deal.getCostA(), ItemStack.EMPTY, deal.getResult());
+        machine.setItem(MachineSlots.INPUT_A, new ItemStack(Items.RABBIT_FOOT));
+        tick(helper, machine, helper.absolutePos(at));
+        helper.assertTrue(machine.getItem(MachineSlots.OUTPUT).isEmpty(), "an unclaimed workstation traded");
+        helper.assertTrue(villager.getOffers().get(0).getUses() == 0, "the nearby villager was traded");
+        helper.succeed();
+    }
+
     private static Set<Integer> orbIds(Level level, AABB area) {
         Set<Integer> ids = new HashSet<>();
         for (ExperienceOrb orb : level.getEntitiesOfClass(ExperienceOrb.class, area)) {
@@ -259,11 +313,23 @@ public final class MarketGameTests {
     }
 
     private static Villager villager(GameTestHelper helper, MerchantOffer offer) {
-        Villager villager = helper.spawn(EntityTypes.VILLAGER, 1, 2, 1);
+        return villagerAt(helper, offer, 1, 2, 1);
+    }
+
+    private static Villager villagerAt(GameTestHelper helper, MerchantOffer offer, int x, int y, int z) {
+        Villager villager = helper.spawn(EntityTypes.VILLAGER, x, y, z);
         MerchantOffers offers = new MerchantOffers();
         offers.add(offer);
         villager.setOffers(offers);
+        claim(helper, villager, x, y - 1, z);
         return villager;
+    }
+
+    private static void claim(GameTestHelper helper, Villager villager, int x, int y, int z) {
+        BlockPos relative = new BlockPos(x, y, z);
+        helper.setBlock(relative, Blocks.LECTERN);
+        villager.getBrain().setMemory(MemoryModuleType.JOB_SITE,
+                GlobalPos.of(helper.getLevel().dimension(), helper.absolutePos(relative)));
     }
 
     @SuppressWarnings("removal")

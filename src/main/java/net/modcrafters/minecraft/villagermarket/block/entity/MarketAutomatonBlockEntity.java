@@ -3,9 +3,9 @@ package net.modcrafters.minecraft.villagermarket.block.entity;
 import net.modcrafters.minecraft.villagermarket.ModContent;
 import net.modcrafters.minecraft.villagermarket.menu.MachineSlots;
 import net.modcrafters.minecraft.villagermarket.menu.MarketAutomatonMenu;
-import net.modcrafters.minecraft.villagermarket.menu.VillagerMarketMenu;
 import net.modcrafters.minecraft.villagermarket.network.MarketPayloads;
 import net.modcrafters.minecraft.villagermarket.platform.Services;
+import net.modcrafters.minecraft.villagermarket.search.JobSites;
 import net.modcrafters.minecraft.villagermarket.search.MarketSearch;
 import net.modcrafters.minecraft.villagermarket.trade.ArmedTrade;
 import net.modcrafters.minecraft.villagermarket.trade.ListedOffer;
@@ -47,13 +47,19 @@ public class MarketAutomatonBlockEntity extends BlockEntity implements WorldlyCo
     private RedstoneMode redstone = RedstoneMode.IGNORED;
     private boolean similar;
     private int ticks;
+    private boolean sawBinding;
+    private boolean bound;
 
     public MarketAutomatonBlockEntity(BlockPos pos, BlockState state) {
         super(ModContent.automatonType(), pos, state);
     }
 
     public static void serverTick(Level level, BlockPos pos, BlockState state, MarketAutomatonBlockEntity machine) {
-        if (!(level instanceof ServerLevel server) || !machine.hasRecipe() || !machine.allowsWork(level)) {
+        if (!(level instanceof ServerLevel server)) {
+            return;
+        }
+        machine.watchBinding(server, pos);
+        if (!machine.hasRecipe() || !machine.allowsWork(level)) {
             return;
         }
         if (machine.ticks > 0) {
@@ -127,7 +133,7 @@ public class MarketAutomatonBlockEntity extends BlockEntity implements WorldlyCo
         MerchantOffer chosen = null;
         int bestA = Integer.MAX_VALUE;
         int bestB = Integer.MAX_VALUE;
-        for (Villager villager : MarketSearch.find(server, pos)) {
+        for (Villager villager : MarketSearch.forAutomaton(server, pos)) {
             var offers = villager.getOffers();
             for (int index = 0; index < offers.size(); index++) {
                 MerchantOffer offer = offers.get(index);
@@ -157,8 +163,22 @@ public class MarketAutomatonBlockEntity extends BlockEntity implements WorldlyCo
         return true;
     }
 
+    private void watchBinding(ServerLevel server, BlockPos pos) {
+        boolean now = JobSites.workstation(server.getBlockState(pos.above()));
+        if (!sawBinding) {
+            sawBinding = true;
+            bound = now;
+            return;
+        }
+        if (now == bound) {
+            return;
+        }
+        bound = now;
+        publishOffers(server);
+    }
+
     private void publishOffers(ServerLevel server) {
-        List<ListedOffer> fresh = VillagerMarketMenu.scan(server, this.worldPosition);
+        List<ListedOffer> fresh = MarketAutomatonMenu.scan(server, this.worldPosition);
         for (ServerPlayer player : server.players()) {
             if (player.containerMenu instanceof MarketAutomatonMenu menu && menu.pos().equals(this.worldPosition)) {
                 menu.replace(fresh);

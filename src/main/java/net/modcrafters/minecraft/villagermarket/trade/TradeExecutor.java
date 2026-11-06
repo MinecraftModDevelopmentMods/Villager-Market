@@ -2,6 +2,7 @@ package net.modcrafters.minecraft.villagermarket.trade;
 
 import net.modcrafters.minecraft.villagermarket.search.MarketSearch;
 import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.ExperienceOrb;
@@ -22,8 +23,11 @@ public final class TradeExecutor {
     }
 
     public static Result execute(ServerPlayer player, BlockPos marketPos, int villagerId, int offerIndex, int requestedUses) {
-        Entity entity = player.level().getEntity(villagerId);
-        if (!(entity instanceof Villager villager) || !villager.isAlive() || !MarketSearch.contains(marketPos, villager.position())) {
+        if (!(player.level() instanceof ServerLevel level)) {
+            return new Result(0, true);
+        }
+        Entity entity = level.getEntity(villagerId);
+        if (!(entity instanceof Villager villager) || !villager.isAlive() || !MarketSearch.serves(level, marketPos, villager)) {
             return new Result(0, true);
         }
         MerchantOffers offers = villager.getOffers();

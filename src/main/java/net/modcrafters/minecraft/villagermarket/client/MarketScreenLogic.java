@@ -42,6 +42,7 @@ public final class MarketScreenLogic {
     public int listHeight = OFFER_H;
     public int showY = SHOW_Y;
     public boolean showAll = true;
+    public boolean singleVillager;
     public String selectedGroup = "";
     public int groupScroll;
     public int offerScroll;
@@ -84,8 +85,13 @@ public final class MarketScreenLogic {
         return count > offerRows();
     }
 
+    public int offerX() {
+        return singleVillager ? GROUP_X : OFFER_X;
+    }
+
     public int offerWidth(int count) {
-        return offerBar(count) ? BAR_X - OFFER_X - 2 : OFFER_W;
+        int right = offerBar(count) ? BAR_X - 2 : WIDTH - 8;
+        return right - offerX();
     }
 
     public void fitOffer(int count) {
@@ -184,7 +190,7 @@ public final class MarketScreenLogic {
     }
 
     private Click browseAt(int x, int y, List<ListedOffer> offers, Inventory inventory) {
-        if (inside(x, y, GROUP_X, GROUP_Y, GROUP_W, listHeight)) {
+        if (!singleVillager && inside(x, y, GROUP_X, GROUP_Y, GROUP_W, listHeight)) {
             int index = groupScroll + (y - GROUP_Y) / GROUP_ROW;
             List<String> groups = groups(offers);
             if (index == 0) {
@@ -199,7 +205,7 @@ public final class MarketScreenLogic {
         if (pressBar(x, y, shown.size())) {
             return Click.BAR;
         }
-        if (inside(x, y, OFFER_X, OFFER_Y, offerWidth(shown.size()), listHeight)) {
+        if (inside(x, y, offerX(), OFFER_Y, offerWidth(shown.size()), listHeight)) {
             int index = offerScroll + (y - OFFER_Y) / OFFER_ROW;
             selected = index >= 0 && index < shown.size() ? shown.get(index) : null;
             return Click.OFFER;
@@ -211,10 +217,10 @@ public final class MarketScreenLogic {
         int x = (int) mouseX - left;
         int y = (int) mouseY - top;
         int step = delta > 0 ? -1 : 1;
-        if (inside(x, y, GROUP_X, GROUP_Y, GROUP_W, listHeight)) {
+        if (!singleVillager && inside(x, y, GROUP_X, GROUP_Y, GROUP_W, listHeight)) {
             int visible = Math.max(1, listHeight / GROUP_ROW);
             groupScroll = clamp(groupScroll + step, groupCount + 1 - visible);
-        } else if (inside(x, y, OFFER_X, OFFER_Y, BAR_X + BAR_W - OFFER_X, listHeight)) {
+        } else if (inside(x, y, offerX(), OFFER_Y, BAR_X + BAR_W - offerX(), listHeight)) {
             offerScroll = clamp(offerScroll + step, offerCount - offerRows());
         }
     }

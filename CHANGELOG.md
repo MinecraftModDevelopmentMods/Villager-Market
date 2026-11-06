@@ -8,6 +8,9 @@ After publishing, the action prepares the next development version and archives 
 
 ## Unreleased
 
+- The market and the automaton follow the village. A villager counts while their bed, bell, or job site sits in that village, wherever they are standing.
+- An automaton placed directly under a job site trades only with the villager who claimed it. The window lists just that villager's offers.
+
 ## 2.0.1
 
 - The villager faces sit in the barrel instead of sticking out. The market opening is an oval. The automaton opening is an oval over a square cut, and its bottom stays solid. The nose is narrower.

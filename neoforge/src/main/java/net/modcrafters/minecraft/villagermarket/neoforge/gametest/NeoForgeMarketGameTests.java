@@ -63,7 +63,7 @@ public final class NeoForgeMarketGameTests {
     @GameTestGenerator
     public static Collection<TestFunction> generated() {
         return MarketGameTests.CASES.stream()
-                .map(test -> new TestFunction(test.name(), Constants.MOD_ID + "." + test.name(), "villagermarket:empty",
+                .map(test -> new TestFunction(test.name(), Constants.MOD_ID + "." + test.name(), "villagermarket:wide",
                         100, 0L, true, test.body()))
                 .toList();
     }

@@ -3,6 +3,7 @@ package net.modcrafters.minecraft.villagermarket.menu;
 import net.modcrafters.minecraft.villagermarket.ModContent;
 import net.modcrafters.minecraft.villagermarket.block.entity.MarketAutomatonBlockEntity;
 import net.modcrafters.minecraft.villagermarket.block.entity.RedstoneMode;
+import net.modcrafters.minecraft.villagermarket.search.MarketSearch;
 import net.modcrafters.minecraft.villagermarket.trade.ArmedTrade;
 import net.modcrafters.minecraft.villagermarket.trade.ListedOffer;
 import net.minecraft.core.BlockPos;
@@ -77,7 +78,11 @@ public class MarketAutomatonMenu extends AbstractContainerMenu {
             redstone = machine.redstone().ordinal();
             similar = machine.similar();
         }
-        return new AutomatonOpening(pos, VillagerMarketMenu.scan(level, pos), costA, costB, result, redstone, similar);
+        return new AutomatonOpening(pos, scan(level, pos), costA, costB, result, redstone, similar);
+    }
+
+    public static List<ListedOffer> scan(ServerLevel level, BlockPos pos) {
+        return VillagerMarketMenu.list(MarketSearch.forAutomaton(level, pos));
     }
 
     public BlockPos pos() {

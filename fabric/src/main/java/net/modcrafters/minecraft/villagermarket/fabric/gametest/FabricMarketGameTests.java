@@ -16,8 +16,13 @@ public class FabricMarketGameTests {
     }
 
     @GameTest(structure = "villagermarket:wide")
-    public void villagerOutsideTheBoxIsNotTraded(GameTestHelper helper) {
-        MarketGameTests.villagerOutsideTheBoxIsNotTraded(helper);
+    public void villagerOutsideTheVillageIsNotTraded(GameTestHelper helper) {
+        MarketGameTests.villagerOutsideTheVillageIsNotTraded(helper);
+    }
+
+    @GameTest(structure = "villagermarket:wide")
+    public void distantVillagerWithAVillageJobIsTraded(GameTestHelper helper) {
+        MarketGameTests.distantVillagerWithAVillageJobIsTraded(helper);
     }
 
     @GameTest(structure = "villagermarket:wide")
@@ -48,5 +53,15 @@ public class FabricMarketGameTests {
     @GameTest(structure = "villagermarket:wide")
     public void automatonBuysTheCheapestSimilar(GameTestHelper helper) {
         MarketGameTests.automatonBuysTheCheapestSimilar(helper);
+    }
+
+    @GameTest(structure = "villagermarket:wide")
+    public void automatonUnderAJobSiteTradesWithItsOwner(GameTestHelper helper) {
+        MarketGameTests.automatonUnderAJobSiteTradesWithItsOwner(helper);
+    }
+
+    @GameTest(structure = "villagermarket:wide")
+    public void unclaimedJobSiteDoesNotTrade(GameTestHelper helper) {
+        MarketGameTests.unclaimedJobSiteDoesNotTrade(helper);
     }
 }

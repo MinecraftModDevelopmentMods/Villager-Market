@@ -2,6 +2,7 @@ package net.modcrafters.minecraft.villagermarket.client;
 
 import net.modcrafters.minecraft.villagermarket.block.entity.RedstoneMode;
 import net.modcrafters.minecraft.villagermarket.menu.MachineSlots;
+import net.modcrafters.minecraft.villagermarket.search.JobSites;
 import net.modcrafters.minecraft.villagermarket.menu.MarketAutomatonMenu;
 import net.modcrafters.minecraft.villagermarket.network.AutomatonPayloads;
 import net.modcrafters.minecraft.villagermarket.network.MarketPayloads;
@@ -76,39 +77,45 @@ public class MarketAutomatonScreen extends AbstractContainerScreen<MarketAutomat
     @Override
     public void extractBackground(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
         super.extractBackground(graphics, mouseX, mouseY, partialTick);
+        bind();
         int left = this.leftPos;
         int top = this.topPos;
         drawPanel(graphics, left, top);
         graphics.text(this.font, this.title, left + 8, top + 6, LABEL, false);
-        List<String> groups = logic.groups(this.menu.offers());
-        graphics.enableScissor(left + MarketScreenLogic.GROUP_X, top + MarketScreenLogic.GROUP_Y,
-                left + MarketScreenLogic.GROUP_X + MarketScreenLogic.GROUP_W, top + MarketScreenLogic.GROUP_Y + logic.listHeight);
-        drawGroup(graphics, left, top, mouseX, mouseY, 0, logic.selectedGroup.isEmpty(), Component.translatable("gui.villagermarket.all"));
-        for (int i = 0; i < groups.size(); i++) {
-            drawGroup(graphics, left, top, mouseX, mouseY, i + 1, groups.get(i).equals(logic.selectedGroup), VillagerMarketScreen.groupLabel(groups.get(i)));
+        if (!logic.singleVillager) {
+            List<String> groups = logic.groups(this.menu.offers());
+            graphics.enableScissor(left + MarketScreenLogic.GROUP_X, top + MarketScreenLogic.GROUP_Y,
+                    left + MarketScreenLogic.GROUP_X + MarketScreenLogic.GROUP_W, top + MarketScreenLogic.GROUP_Y + logic.listHeight);
+            drawGroup(graphics, left, top, mouseX, mouseY, 0, logic.selectedGroup.isEmpty(), Component.translatable("gui.villagermarket.all"));
+            for (int i = 0; i < groups.size(); i++) {
+                drawGroup(graphics, left, top, mouseX, mouseY, i + 1, groups.get(i).equals(logic.selectedGroup), VillagerMarketScreen.groupLabel(groups.get(i)));
+            }
+            graphics.disableScissor();
         }
-        graphics.disableScissor();
         hovered = ItemStack.EMPTY;
         tip = Component.empty();
         Inventory inventory = this.minecraft.player.getInventory();
         List<ListedOffer> shown = logic.visible(this.menu.offers(), inventory);
         logic.fitOffer(shown.size());
+        int offerX = logic.offerX();
         int offerW = logic.offerWidth(shown.size());
-        graphics.enableScissor(left + MarketScreenLogic.OFFER_X, top + MarketScreenLogic.OFFER_Y,
-                left + MarketScreenLogic.OFFER_X + offerW, top + MarketScreenLogic.OFFER_Y + logic.listHeight);
+        graphics.enableScissor(left + offerX, top + MarketScreenLogic.OFFER_Y,
+                left + offerX + offerW, top + MarketScreenLogic.OFFER_Y + logic.listHeight);
         for (int i = logic.offerScroll; i < shown.size(); i++) {
             int y = top + MarketScreenLogic.OFFER_Y + (i - logic.offerScroll) * MarketScreenLogic.OFFER_ROW;
             if (y + MarketScreenLogic.OFFER_ROW > top + MarketScreenLogic.OFFER_Y + logic.listHeight) {
                 break;
             }
-            drawOffer(graphics, shown.get(i), left + MarketScreenLogic.OFFER_X, y, offerW, mouseX, mouseY, inventory);
+            drawOffer(graphics, shown.get(i), left + offerX, y, offerW, mouseX, mouseY, inventory);
         }
         graphics.disableScissor();
         drawOfferBar(graphics, left, top, shown.size());
+        if (!logic.singleVillager) {
+            drawSimilar(graphics, left, top, mouseX, mouseY);
+        }
         Component show = Component.translatable(logic.showAll ? "gui.villagermarket.show_all" : "gui.villagermarket.available");
         drawButton(graphics, left + MarketScreenLogic.SHOW_X, top + MachineSlots.SHOW_Y, MarketScreenLogic.SHOW_W, MarketScreenLogic.SHOW_H,
                 show, logic.showAll || inside(mouseX, mouseY, left + MarketScreenLogic.SHOW_X, top + MachineSlots.SHOW_Y, MarketScreenLogic.SHOW_W, MarketScreenLogic.SHOW_H));
-        drawSimilar(graphics, left, top, mouseX, mouseY);
         drawSlot(graphics, left + MachineSlots.INPUT_X - 1, top + MachineSlots.INPUT_Y - 1);
         drawSlot(graphics, left + MachineSlots.INPUT_X + 17, top + MachineSlots.INPUT_Y - 1);
         graphics.blitSprite(RenderPipelines.GUI_TEXTURED, FLOW_ARROW, left + MachineSlots.ARROW_X, top + MachineSlots.INPUT_Y, MachineSlots.ARROW_W, MachineSlots.ARROW_H);
@@ -228,8 +235,13 @@ public class MarketAutomatonScreen extends AbstractContainerScreen<MarketAutomat
         }
     }
 
+    private void bind() {
+        logic.singleVillager = this.minecraft.level != null
+                && JobSites.workstation(this.minecraft.level.getBlockState(this.menu.pos().above()));
+    }
+
     private boolean similarHit(double mouseX, double mouseY) {
-        return inside((int) mouseX, (int) mouseY, this.leftPos + MachineSlots.SIMILAR_X, this.topPos + MachineSlots.SIMILAR_Y, MachineSlots.SIMILAR_SIZE, MachineSlots.SIMILAR_SIZE);
+        return !logic.singleVillager && inside((int) mouseX, (int) mouseY, this.leftPos + MachineSlots.SIMILAR_X, this.topPos + MachineSlots.SIMILAR_Y, MachineSlots.SIMILAR_SIZE, MachineSlots.SIMILAR_SIZE);
     }
 
     private boolean redstoneHit(double mouseX, double mouseY) {
@@ -256,6 +268,7 @@ public class MarketAutomatonScreen extends AbstractContainerScreen<MarketAutomat
 
     @Override
     public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
+        bind();
         if (similarHit(event.x(), event.y())) {
             Services.PLATFORM.sendToServer(new AutomatonPayloads.Similar());
             return true;
@@ -285,6 +298,7 @@ public class MarketAutomatonScreen extends AbstractContainerScreen<MarketAutomat
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+        bind();
         List<ListedOffer> shown = logic.visible(this.menu.offers(), this.minecraft.player.getInventory());
         logic.scroll(mouseX, mouseY, this.leftPos, this.topPos, scrollY, shown.size(), logic.groups(this.menu.offers()).size());
         return true;

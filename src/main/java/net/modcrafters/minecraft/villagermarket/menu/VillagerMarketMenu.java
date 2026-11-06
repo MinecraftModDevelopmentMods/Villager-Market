@@ -6,6 +6,7 @@ import net.modcrafters.minecraft.villagermarket.search.MarketSearch;
 import net.modcrafters.minecraft.villagermarket.trade.ListedOffer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.npc.villager.Villager;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
@@ -36,8 +37,12 @@ public class VillagerMarketMenu extends AbstractContainerMenu {
     }
 
     public static List<ListedOffer> scan(ServerLevel level, BlockPos pos) {
+        return list(MarketSearch.village(level, pos));
+    }
+
+    public static List<ListedOffer> list(List<Villager> villagers) {
         List<ListedOffer> listed = new ArrayList<>();
-        for (var villager : MarketSearch.find(level, pos)) {
+        for (Villager villager : villagers) {
             listed.addAll(ListedOffer.from(villager));
         }
         return List.copyOf(listed);
